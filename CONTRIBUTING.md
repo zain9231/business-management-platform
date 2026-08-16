@@ -54,3 +54,34 @@ Do not run automatic whitespace or end-of-file fixes over those manifest-backed 
 Configure `check-added-large-files` with `--maxkb=2048` so the accepted 1,024,807-byte ERD PDF is allowed while unexpectedly large additions remain blocked.
 
 After introducing or changing formatting, line-ending, or pre-commit tooling, verify the Phase 0 manifest again from a clean checkout.
+
+## Protected main workflow
+
+Direct pushes to `main` are blocked. Normal development follows this sequence:
+
+    git switch main
+    git pull --ff-only
+    git switch -c <type>/<backlog-task-description>
+    # make the change and run its required checks
+    git add .
+    git commit
+    git push -u origin <branch-name>
+    gh pr create
+    gh pr merge --squash --delete-branch
+
+Pull requests require zero approvals until collaborators join. Required status
+checks stay disabled until P1-07 delivers a working CI workflow.
+
+### Emergency administrator bypass
+
+Use only when an urgent repository repair genuinely cannot go through a pull
+request. Temporarily disable administrator enforcement:
+
+    gh api --method DELETE "repos/zain9231/business-management-platform/branches/main/protection/enforce_admins"
+
+Make and verify the repair, then immediately restore enforcement:
+
+    gh api --method POST "repos/zain9231/business-management-platform/branches/main/protection/enforce_admins"
+
+Never leave enforcement disabled. Record the reason for any bypass in the repair
+commit or pull request.
