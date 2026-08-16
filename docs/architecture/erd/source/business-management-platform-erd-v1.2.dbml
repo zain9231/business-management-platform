@@ -1,0 +1,560 @@
+Project Business_Management_Platform_v1_2 {
+  database_type: 'PostgreSQL'
+  Note: 'MVP ERD based on Specification v1.2 and post-freeze Decision Log clarifications.'
+}
+
+/* =========================================================
+   FINITE STATUS VALUES
+   ========================================================= */
+
+Enum booking_status {
+  scheduled
+  confirmed
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+Enum payment_status {
+  pending
+  paid
+  partially_refunded
+  refunded
+  failed
+}
+
+/* =========================================================
+   1. BUSINESSES
+   ========================================================= */
+
+Table businesses {
+  id uuid [pk, not null]
+
+  name varchar(200) [not null]
+  business_type varchar(100) [not null]
+
+  public_slug varchar(150) [
+    unique,
+    note: 'Reserved for the future public booking API. Store lowercase URL-safe values. No MVP behavior.'
+  ]
+
+  email varchar(320)
+  phone varchar(50)
+  address text
+
+  timezone varchar(100) [
+    not null,
+    note: 'IANA timezone name, for example Europe/Berlin or America/New_York.'
+  ]
+
+  currency char(3) [
+    not null,
+    default: 'USD',
+    note: 'ISO 4217 currency code.'
+  ]
+
+  logo_url text
+
+  is_active boolean [
+    not null,
+    default: true,
+    note: 'Business deactivation flag required by Section 41.'
+  ]
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  checks {
+    `char_length(currency) = 3` [name: 'chk_businesses_currency_length']
+  }
+
+  Note: 'Businesses are deactivated through is_active rather than deleted through normal application workflows.'
+}
+
+/* =========================================================
+   2. ROLES
+   ========================================================= */
+
+Table roles {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  name varchar(50) [
+    not null,
+    check: `name IN ('Administrator', 'Manager', 'Staff')`
+  ]
+
+  indexes {
+    business_id [name: 'idx_roles_business_id']
+    (business_id, id) [unique, name: 'uq_roles_business_id_id']
+    (business_id, name) [unique, name: 'uq_roles_business_id_name']
+  }
+
+  Note: 'Fixed tenant-owned roles for the MVP. Granular or custom permissions are post-MVP.'
+}
+
+/* =========================================================
+   3. USERS
+   ========================================================= */
+
+Table users {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+  role_id uuid [not null]
+
+  name varchar(200) [not null]
+
+  email varchar(320) [
+    not null,
+    unique,
+    note: 'Globally unique across all tenants. Normalize to lowercase before storage.'
+  ]
+
+  password_hash text [
+    not null,
+    note: 'Store a modern password hash only; never store plaintext passwords.'
+  ]
+
+  is_active boolean [not null, default: true]
+  last_login timestamptz
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_users_business_id']
+    (business_id, id) [unique, name: 'uq_users_business_id_id']
+    (business_id, role_id) [name: 'idx_users_business_role']
+  }
+}
+
+/* =========================================================
+   4. STAFF
+   ========================================================= */
+
+Table staff {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  user_id uuid [
+    note: 'Nullable because a staff resource does not always require a login account.'
+  ]
+
+  name varchar(200) [not null]
+  email varchar(320)
+  phone varchar(50)
+  position varchar(150)
+  specialization varchar(200)
+
+  is_active boolean [not null, default: true]
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_staff_business_id']
+    (business_id, id) [unique, name: 'uq_staff_business_id_id']
+    (business_id, user_id) [name: 'idx_staff_business_user']
+    (business_id, is_active) [name: 'idx_staff_business_active']
+  }
+
+  Note: 'Future website annotations only: photo_url, bio and show_on_website. These are NOT MVP columns.'
+}
+
+/* =========================================================
+   5. CUSTOMERS
+   ========================================================= */
+
+Table customers {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  name varchar(200) [not null]
+  email varchar(320)
+  phone varchar(50)
+  address text
+  notes text
+
+  is_active boolean [not null, default: true]
+
+  custom_fields jsonb [
+    not null,
+    default: '{}',
+    note: 'Configuration-driven custom customer data.'
+  ]
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_customers_business_id']
+    (business_id, id) [unique, name: 'uq_customers_business_id_id']
+    (business_id, name) [name: 'idx_customers_business_name']
+    (business_id, email) [name: 'idx_customers_business_email']
+    (business_id, phone) [name: 'idx_customers_business_phone']
+    (business_id, is_active) [name: 'idx_customers_business_active']
+  }
+}
+
+/* =========================================================
+   6. SERVICES
+   ========================================================= */
+
+Table services {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  name varchar(200) [not null]
+  description text
+
+  duration_minutes integer [
+    not null,
+    check: `duration_minutes > 0`
+  ]
+
+  price numeric(12,2) [
+    not null,
+    check: `price >= 0`,
+    note: 'Uses the business default currency.'
+  ]
+
+  is_active boolean [not null, default: true]
+
+  custom_fields jsonb [
+    not null,
+    default: '{}',
+    note: 'Configuration-driven custom service data.'
+  ]
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_services_business_id']
+    (business_id, id) [unique, name: 'uq_services_business_id_id']
+    (business_id, is_active) [name: 'idx_services_business_active']
+  }
+}
+
+/* =========================================================
+   7. BOOKINGS
+   ========================================================= */
+
+Table bookings {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  customer_id uuid [not null]
+  staff_id uuid [not null]
+  service_id uuid [not null]
+
+  start_time timestamptz [
+    not null,
+    note: 'Stored in UTC. Convert to the business timezone for availability checks.'
+  ]
+
+  end_time timestamptz [
+    not null,
+    note: 'Calculated by the server from start_time plus service duration.'
+  ]
+
+  status booking_status [
+    not null,
+    default: 'scheduled',
+    note: 'Legal transitions and role permissions are defined in the booking API contract.'
+  ]
+
+  notes text
+
+  custom_fields jsonb [
+    not null,
+    default: '{}',
+    note: 'Configuration-driven custom booking data.'
+  ]
+
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_bookings_business_id']
+
+    (business_id, id) [
+      unique,
+      name: 'uq_bookings_business_id_id'
+    ]
+
+    (business_id, id, customer_id) [
+      unique,
+      name: 'uq_bookings_business_id_id_customer'
+    ]
+
+    (business_id, start_time) [
+      name: 'idx_bookings_business_start_time'
+    ]
+
+    (business_id, staff_id, start_time) [
+      name: 'idx_bookings_business_staff_start_time'
+    ]
+
+    (business_id, customer_id, start_time) [
+      name: 'idx_bookings_business_customer_start_time'
+    ]
+
+    (business_id, service_id, start_time) [
+      name: 'idx_bookings_business_service_start_time'
+    ]
+
+    (business_id, status) [
+      name: 'idx_bookings_business_status'
+    ]
+  }
+
+  checks {
+    `start_time < end_time` [name: 'chk_bookings_time_order']
+  }
+
+  Note: 'Historical record. No DELETE /bookings/{id}. Cancellation occurs through the booking status state machine.'
+}
+
+/* =========================================================
+   8. PAYMENTS — STRETCH GOAL
+   ========================================================= */
+
+Table payments {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  booking_id uuid [not null]
+
+  customer_id uuid [
+    not null,
+    note: 'Intentional reporting denormalization if billing ships. Must match the customer recorded on the referenced booking.'
+  ]
+
+  amount numeric(12,2) [
+    not null,
+    check: `amount >= 0`
+  ]
+
+  currency char(3) [
+    not null,
+    note: 'Original ISO 4217 transaction currency retained for historical reporting.'
+  ]
+
+  status payment_status [not null, default: 'pending']
+  payment_method varchar(100) [not null]
+
+  paid_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_payments_business_id']
+    booking_id [name: 'idx_payments_booking_id']
+    customer_id [name: 'idx_payments_customer_id']
+  }
+
+  checks {
+    `char_length(currency) = 3` [name: 'chk_payments_currency_length']
+  }
+
+  Note: 'Stretch-goal table. Payment records are retained as historical financial records.'
+}
+
+/* =========================================================
+   9. STAFF AVAILABILITY
+   ========================================================= */
+
+Table staff_availability {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+  staff_id uuid [not null]
+
+  weekday smallint [
+    not null,
+    check: `weekday BETWEEN 0 AND 6`,
+    note: 'Convention: 0 = Monday and 6 = Sunday.'
+  ]
+
+  start_time time [
+    not null,
+    note: 'Business-local wall-clock time, not UTC.'
+  ]
+
+  end_time time [
+    not null,
+    note: 'Business-local wall-clock time, not UTC. The exact value 24:00:00 is legal as a day-end boundary and must not be normalized to 00:00:00.'
+  ]
+
+  indexes {
+    business_id [name: 'idx_staff_availability_business_id']
+
+    (business_id, staff_id, weekday) [
+      name: 'idx_staff_availability_staff_weekday'
+    ]
+  }
+
+  checks {
+    `start_time < end_time` [name: 'chk_staff_availability_time_order']
+  }
+
+  Note: 'A staff member with no availability rows is not bookable. Windows are evaluated in the business timezone.'
+}
+
+/* =========================================================
+   10. ACTIVITY LOGS
+   ========================================================= */
+
+Table activity_logs {
+  id uuid [pk, not null]
+  business_id uuid [not null]
+
+  user_id uuid [
+    note: 'Nullable for system-generated activity.'
+  ]
+
+  action varchar(150) [not null]
+  entity_type varchar(100) [not null]
+
+  entity_id uuid [
+    note: 'Polymorphic reference. Deliberately has no database FK and must be validated by application logic.'
+  ]
+
+  description text
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    business_id [name: 'idx_activity_logs_business_id']
+
+    (business_id, created_at) [
+      name: 'idx_activity_logs_business_created_at'
+    ]
+
+    (business_id, user_id, created_at) [
+      name: 'idx_activity_logs_business_user_created_at'
+    ]
+
+    (business_id, entity_type, entity_id) [
+      name: 'idx_activity_logs_entity'
+    ]
+  }
+
+  Note: 'Append-oriented historical audit records. Not deleted through normal application workflows.'
+}
+
+/* =========================================================
+   11. REFRESH TOKENS
+   ========================================================= */
+
+Table refresh_tokens {
+  id uuid [pk, not null]
+  user_id uuid [not null]
+
+  token_hash text [
+    not null,
+    note: 'Store only a cryptographic hash of the refresh token. Never store the raw token.'
+  ]
+
+  expires_at timestamptz [not null]
+
+  revoked_at timestamptz [
+    note: 'Set when used during rotation or revoked through POST /auth/logout.'
+  ]
+
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    token_hash [name: 'idx_refresh_tokens_token_hash']
+    user_id [name: 'idx_refresh_tokens_user_id']
+  }
+
+  Note: 'Refresh tokens are single-use and rotated. Expired, revoked or previously rotated tokens return 401.'
+}
+
+/* =========================================================
+   DIRECT BUSINESS/TENANT RELATIONSHIPS
+   ========================================================= */
+
+Ref fk_roles_business {
+  roles.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_users_business {
+  users.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_staff_business {
+  staff.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_customers_business {
+  customers.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_services_business {
+  services.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_bookings_business {
+  bookings.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_payments_business {
+  payments.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_staff_availability_business {
+  staff_availability.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+Ref fk_activity_logs_business {
+  activity_logs.business_id > businesses.id [delete: restrict, update: no action]
+}
+
+/* =========================================================
+   COMPOSITE TENANT-SAFE FOREIGN KEYS
+   ========================================================= */
+
+Ref fk_users_role_tenant {
+  users.(business_id, role_id) > roles.(business_id, id) [delete: restrict, update: no action]
+}
+
+Ref fk_staff_user_tenant {
+  staff.(business_id, user_id) > users.(business_id, id) [delete: restrict, update: no action]
+}
+
+Ref fk_bookings_customer_tenant {
+  bookings.(business_id, customer_id) > customers.(business_id, id) [delete: restrict, update: no action]
+}
+
+Ref fk_bookings_staff_tenant {
+  bookings.(business_id, staff_id) > staff.(business_id, id) [delete: restrict, update: no action]
+}
+
+Ref fk_bookings_service_tenant {
+  bookings.(business_id, service_id) > services.(business_id, id) [delete: restrict, update: no action]
+}
+
+Ref fk_staff_availability_staff_tenant {
+  staff_availability.(business_id, staff_id) > staff.(business_id, id) [delete: restrict, update: no action]
+}
+
+Ref fk_activity_logs_user_tenant {
+  activity_logs.(business_id, user_id) > users.(business_id, id) [delete: restrict, update: no action]
+}
+
+/* Ensures payments.customer_id matches its booking customer. */
+
+Ref fk_payments_booking_customer_tenant {
+  payments.(business_id, booking_id, customer_id) > bookings.(business_id, id, customer_id) [delete: restrict, update: no action]
+}
+
+Ref fk_payments_customer_tenant {
+  payments.(business_id, customer_id) > customers.(business_id, id) [delete: restrict, update: no action]
+}
+
+/* refresh_tokens intentionally has no business_id. */
+
+Ref fk_refresh_tokens_user {
+  refresh_tokens.user_id > users.id [delete: cascade, update: no action]
+}
