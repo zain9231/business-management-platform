@@ -53,19 +53,6 @@
       "WebFetch(domain:docs.github.com)",
       "WebFetch(domain:dbml.dbdiagram.io)"
     ],
-    "ask": [
-      "Bash(git push:*)",
-      "Bash(git commit:*)",
-      "Bash(git merge:*)",
-      "Bash(git rebase:*)",
-      "Bash(git tag:*)",
-      "Bash(gh pr create:*)",
-      "Bash(gh pr merge:*)",
-      "Bash(gh api:*)",
-      "Bash(docker compose down:*)",
-      "Bash(pip install:*)",
-      "Bash(npm install:*)"
-    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
@@ -81,6 +68,19 @@
       "Bash(git clean -fdx:*)",
       "Bash(curl:*)",
       "Bash(wget:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git tag:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh api:*)",
+      "Bash(docker compose down:*)",
+      "Bash(pip install:*)",
+      "Bash(npm install:*)"
     ]
   },
   "hooks": {
@@ -132,6 +132,33 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context_budget.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context_budget.py\" --reset",
+            "timeout": 5
+          }
+        ]
+      }
     ]
+  },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true
   }
 }
