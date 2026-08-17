@@ -57,3 +57,8 @@ Desktop.ini
 # Generated documentation and local tooling output
 docs/_build/
 site/
+
+# Claude Code — local, personal, and machine-specific configuration
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/*.local.json

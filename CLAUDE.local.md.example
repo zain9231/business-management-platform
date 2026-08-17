@@ -1,0 +1,31 @@
+# Personal project instructions (template)
+
+Copy this file to `CLAUDE.local.md` at the repository root. It is gitignored, loads alongside
+`CLAUDE.md`, and is read last — so it is the right place for anything machine-specific or personal
+that should not go into the shared, reviewable configuration.
+
+Keep it short. It costs context in every session exactly like `CLAUDE.md` does.
+
+Delete the headings you do not use.
+
+## My environment
+
+- OS and shell:
+- Python interpreter and how I activate the venv:
+- How I start PostgreSQL (Docker Desktop / local service / other):
+- Local API URL and port:
+- Anything on this machine that behaves differently from the README's instructions:
+
+## My working style
+
+- <!-- e.g. Explain the plan before writing code, even for small changes. -->
+- <!-- e.g. Prefer showing me a diff over describing what you changed. -->
+- <!-- e.g. I am learning SQLAlchemy — explain non-obvious ORM behavior when you use it. -->
+
+## Current focus
+
+- Task I am on:
+- Anything I have deliberately deferred and do not want suggested again:
+
+<!-- Do not put secrets, database passwords, or tokens here. This file is gitignored, but it is
+     still plain text on disk and it is loaded into the model's context every session. -->
