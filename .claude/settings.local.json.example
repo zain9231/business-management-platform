@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_comment": [
+    "Copy this file to .claude/settings.local.json. It is gitignored — put anything machine-specific",
+    "or personal here. It merges over .claude/settings.json rather than replacing it.",
+    "",
+    "The blocks below are commented-out examples. Delete what you do not want."
+  ],
+
+  "_example_permissions": {
+    "allow": [
+      "Bash(docker compose down:*)",
+      "Bash(psql:*)"
+    ]
+  },
+
+  "_example_env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTEST_ADDOPTS": "-q"
+  },
+
+  "_example_stop_gate": {
+    "_note": [
+      "A Stop hook turns 'tests must pass' into a deterministic gate: Claude cannot end its turn",
+      "until the command exits 0. Powerful for unattended runs, noisy while iterating.",
+      "Enable it only once the backend test suite is fast and green (Phase 2 onward)."
+    ],
+    "hooks": {
+      "Stop": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "cd backend && pytest -m \"not concurrency and not dst\" -q",
+              "timeout": 300
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "_example_statusline": {
+    "_note": "Uncomment as a top-level \"statusLine\" key if you want branch and context in the status bar.",
+    "type": "command",
+    "command": "git rev-parse --abbrev-ref HEAD"
+  }
+}
