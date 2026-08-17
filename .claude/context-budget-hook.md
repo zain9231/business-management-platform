@@ -3,9 +3,13 @@
 Written 2026-08-17. Revision 2. Companion to `claude/claude-setup-guide.md` §6 and §7 in the
 claude.ai Project.
 
-Status: specified and tested, staged but not installed. Both files were delivered to
-`context-budget-handoff/` in the repository root, because remote tooling is not permitted to write
-into `.claude/`. §8 is the task prompt that moves them into place and finishes the install.
+Status: **installed and merged to `main` as `46b57fd`** — squashed from `b757cde` on
+`chore/context-budget-hook` via PR #4, 2026-08-17. Hook at `.claude/hooks/context_budget.py`, wired
+into `.claude/settings.json`, `.claude/.cache/` gitignored, verification cases 1–14 all passing.
+
+This file is authoritative. The copy at `claude/context-budget-hook.md` in the claude.ai Project is
+a mirror so a chat session with no repository access can read it; edit this one and re-mirror there,
+never the reverse.
 
 Revision 2 changes the thresholds from fractions of the context window to absolute token counts.
 Revision 1 assumed a 200K window, which is wrong for this setup — see §3.
@@ -167,8 +171,9 @@ hooks. This specification belongs at `.claude/context-budget-hook.md`, next to `
 because it documents Claude Code configuration rather than the platform. It is deliberately not in
 `docs/project/`, which holds checksum-protected Phase 0 artifacts.
 
-Both files currently sit in `context-budget-handoff/` at the repository root. Move them to the paths
-above and delete that folder; it is a delivery staging area, not part of the layout.
+Done on 2026-08-17. Both files were delivered to a `context-budget-handoff/` staging folder first,
+because remote tooling may not write into `.claude/`; they were moved into place and the folder
+deleted.
 
 **`.claude/settings.json`** — merge these entries, matching the command style of the four existing
 hook entries:
@@ -233,14 +238,18 @@ Re-run them after any edit. Cases 1–13 need only fabricated transcripts; case 
 11. Malformed JSON on stdin produces no output and exit 0.
 12. Empty stdin produces no output and exit 0.
 13. `--reset` clears state, after which the crossed threshold fires again.
-14. Installed live: a real session crossing threshold 1 shows the notice in the transcript, and the
-    following prompt does not repeat it.
+14. Installed live: a session crossing threshold 1 shows the notice in the transcript, and the
+    following prompt does not repeat it. **Closed 2026-08-17** — forced with
+    `CONTEXT_BUDGET_TIERS=20000` on a resumed session rather than waiting for a natural 150K
+    session, which separates "is the hook wired correctly" from "are the thresholds right". The
+    first is now proven; the second is answered only by the decay triggers in §10.
 
 ---
 
 ## 8. Task prompt for Claude Code
 
-Run this in the repository, in a session cleared for the purpose.
+Executed 2026-08-17; all eight steps complete. Retained as the record of what was asked for, and as
+a template if this hook is ever ported to another repository.
 
 > Install the context budget hook. Both files are staged in `context-budget-handoff/` at the
 > repository root: `context-budget-hook.md` is the specification and `context_budget.py` is the
