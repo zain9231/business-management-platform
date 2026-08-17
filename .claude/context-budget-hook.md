@@ -112,6 +112,19 @@ Reading the results:
 transcript line before wiring the hook; do not install a hook that cannot measure. If the projects
 directory is elsewhere, `/status` reports the real path.
 
+### Calibration record
+
+| Date | Session | Measurement | Outcome |
+|---|---|---|---|
+| 2026-08-17 | Install session (`chore/context-budget-hook`) | 91,835 tokens at completion — the full install: file moves, a settings merge, the calibration run, thirteen tests, one commit | Thresholds kept at 150,000 / 300,000. A complete task session costs roughly 92K, so 150K sits at ~1.6x a full task — a defensible line for "this session is now longer than the work it contains." 300K is unambiguously overdue for `/clear`. |
+
+Only 4 transcripts existed at calibration time, not 5, and one had no assistant turn at all — a
+session `/clear`'d immediately, not a format break. The hook stayed silent through the entire install
+session, which is the behavior wanted: one task, no interruption.
+
+Case 14 was closed by forcing `CONTEXT_BUDGET_TIERS=20000` on a resumed session (`claude --continue`)
+rather than waiting for a session to reach 150K naturally.
+
 ---
 
 ## 5. Behavior
