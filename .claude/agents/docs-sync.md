@@ -17,7 +17,7 @@ alters setup, behavior, limitations, architecture, or scope. Then check each tar
 | `README.md` | a command, prerequisite, environment step, deployed URL, or known limitation changed |
 | `.env.example` | any configuration setting was added, renamed, or removed |
 | `CONTRIBUTING.md` | the branch, commit, review, or tooling workflow changed |
-| `docs/project/progress.md` | a task completed, started, or was deferred — always, and in the same commit |
+| `docs/project/progress.md` | a task completed, started, or was deferred — always, and in the same PR |
 | `docs/project/requirements-sources.md` | a new contract was accepted |
 | `docs/deployment/*` | deployment, runbook, or backup/recovery behavior changed |
 | `docs/testing/*` | the test strategy or the traceability matrix changed |

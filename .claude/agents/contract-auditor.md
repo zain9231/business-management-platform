@@ -1,7 +1,7 @@
 ---
 name: contract-auditor
 description: Audits an implementation or a diff against its owning API contract and the shared API conventions, clause by clause. Use proactively before closing any backlog task that implements or changes an endpoint, and before any contract gate task.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob
 model: opus
 ---
 

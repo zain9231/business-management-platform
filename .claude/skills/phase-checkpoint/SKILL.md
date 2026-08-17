@@ -9,6 +9,15 @@ disable-model-invocation: true
 
 A phase gate is the point where continuing on a broken foundation stops being recoverable. Be strict.
 
+## Live-status rule
+
+`docs/project/progress.md` is authoritative for the current task. GitHub issues are authoritative for
+in-flight work. `docs/project/implementation-backlog.md` supplies scope, sequence, dependencies,
+acceptance criteria, and gates; its checkbox state is never a status source. If `progress.md` is
+unreadable or absent, has a missing or duplicate `Next task:` line, has a task identifier that fails
+the expected format, or names a task identifier not found in the backlog, stop: cannot determine
+current task. Do not infer from backlog checkboxes.
+
 ## 1. Read the gate
 
 Find the phase's exit gate line and its milestone row in
@@ -17,7 +26,9 @@ your judgment, is the pass criterion.
 
 ## 2. Confirm every task in the phase is closed
 
-List each task id in the phase with its checklist state. An unchecked item is an open gate.
+List each task id in the phase with its completion record from `progress.md`. Consult GitHub issues
+for in-flight work. A task not recorded complete in `progress.md` is an open gate; backlog checkbox
+state is irrelevant.
 
 ## 3. Full regression
 
@@ -52,13 +63,20 @@ returns an indistinguishable `404` without affecting counts.
 
 State **PASS** or **FAIL** in one line.
 
-On PASS, add a row to `docs/project/progress.md` for the phase gate, then propose the annotated tag
-and record what it covers:
+On PASS, show the exact `docs/project/progress.md` phase-gate row and wait for per-operation approval
+before applying it. Then propose the annotated tag and record what it covers:
 
 ```bash
 git tag -a phase-<n>-complete -m "Phase <n> exit gate passed on <date>. <evidence summary>"
+```
+
+After the tag operation is separately approved and verified, present the push:
+
+```bash
 git push origin phase-<n>-complete
 ```
+
+Wait for per-operation approval and verify the real output of each state transition.
 
 On FAIL, list the blockers in order and stop. Do not start the next phase. Do not reclassify a
 blocker as polish.

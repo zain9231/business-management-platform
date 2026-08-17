@@ -17,7 +17,7 @@ PR_WORKFLOW = (
     "  git switch -c <type>/<task-id>-<description>\n"
     "  git commit\n"
     "  git push -u origin <branch>\n"
-    "  gh pr create --fill\n"
+    "  gh pr create --title \"<title>\" --body-file <reviewed-template-copy>\n"
     "  gh pr merge --squash --delete-branch\n"
     "See CONTRIBUTING.md 'Protected main workflow'."
 )

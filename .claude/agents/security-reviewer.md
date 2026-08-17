@@ -1,7 +1,7 @@
 ---
 name: security-reviewer
 description: Reviews authentication, authorization, cryptography, secret handling, and information disclosure. Use proactively on any change to auth, tokens, hashing, configuration, logging, error handling, middleware, or Docker/CI, and at the P3-09, P10-01, P10-02, and P10-03 gates.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob
 model: opus
 ---
 

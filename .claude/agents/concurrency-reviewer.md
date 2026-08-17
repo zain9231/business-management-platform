@@ -1,7 +1,7 @@
 ---
 name: concurrency-reviewer
 description: Reviews lock ordering, race conditions, transaction boundaries, and domain/audit atomicity. Use proactively on any code that locks rows, rotates tokens, replaces a child collection, deactivates a resource, or writes a booking — and before the P3-08, P4T-09, P5-08, and P5-13 gates.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob
 model: opus
 ---
 

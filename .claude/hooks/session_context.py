@@ -6,7 +6,13 @@ backlog file.
 
 Source of truth for "what's next" is `Next task: <id>` in docs/project/progress.md, because
 implementation-backlog.md is checksum-protected and its checkboxes cannot be ticked freely.
-Falls back to the first unchecked backlog item when progress.md is absent.
+
+`docs/project/progress.md` is authoritative for the current task. GitHub issues are authoritative for
+in-flight work. `docs/project/implementation-backlog.md` supplies scope, sequence, dependencies,
+acceptance criteria, and gates; its checkbox state is never a status source. If `progress.md` is
+unreadable or absent, has a missing or duplicate `Next task:` line, has a task identifier that fails
+the expected format, or names a task identifier not found in the backlog, stop: cannot determine
+current task. Do not infer from backlog checkboxes.
 """
 
 from __future__ import annotations
@@ -20,7 +26,8 @@ import sys
 BACKLOG = os.path.join("docs", "project", "implementation-backlog.md")
 PROGRESS = os.path.join("docs", "project", "progress.md")
 
-NEXT_TASK = re.compile(r"^Next task:\s*([A-Z][A-Z0-9]*-\d+)\s*$", re.MULTILINE)
+NEXT_TASK_LINE = re.compile(r"^Next task:.*$", re.MULTILINE)
+NEXT_TASK = re.compile(r"^Next task:\s*([A-Z][A-Z0-9]*-\d+)\s*$")
 TASK_HEADING = re.compile(r"^###\s+([A-Z][A-Z0-9]*-\d+)\s*[—–-]\s*(.+?)\s*$")
 PHASE_HEADING = re.compile(r"^##\s+((?:Phase\s|First deployment|MVP).*?)\s*$")
 SITTING_SUFFIX = re.compile(r"\s*\([^()]*sitting[^()]*\)\s*$")
@@ -58,19 +65,6 @@ def backlog_tasks(root: str) -> list[tuple[str, str, str]]:
     return tasks
 
 
-def first_unchecked(root: str) -> str | None:
-    """Task id of the first unchecked item sitting inside a task section."""
-    task_id = None
-    for line in read(os.path.join(root, BACKLOG)).splitlines():
-        heading = TASK_HEADING.match(line)
-        if heading:
-            task_id = heading.group(1)
-            continue
-        if task_id and line.lstrip().startswith("- [ ]"):
-            return task_id
-    return None
-
-
 def completed_ids(progress: str) -> set[str]:
     """Task ids recorded under the Completed heading of progress.md."""
     body = re.split(r"^##\s+Completed\s*$", progress, maxsplit=1, flags=re.MULTILINE)
@@ -87,14 +81,17 @@ def status(root: str) -> tuple[str, str, str, int, int] | None:
         return None
 
     progress = read(os.path.join(root, PROGRESS))
-    match = NEXT_TASK.search(progress)
-    wanted = match.group(1) if match else first_unchecked(root)
-    if not wanted:
+    next_task_lines = NEXT_TASK_LINE.findall(progress)
+    if len(next_task_lines) != 1:
         return None
+    match = NEXT_TASK.fullmatch(next_task_lines[0])
+    if match is None:
+        return None
+    wanted = match.group(1)
 
     entry = next((t for t in tasks if t[1] == wanted), None)
     if entry is None:
-        return "", wanted, "", 0, 0
+        return None
 
     phase, task_id, title = entry
     in_phase = [t[1] for t in tasks if t[0] == phase]
@@ -132,6 +129,8 @@ def main() -> None:
             f"  Open it with /task-start {task_id}. Progress is tracked in "
             "docs/project/progress.md, not in the checksum-protected backlog."
         )
+    else:
+        lines.append("- cannot determine current task")
 
     print("\n".join(lines))
 

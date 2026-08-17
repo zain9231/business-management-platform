@@ -45,11 +45,21 @@ owns the subject, tell me, and propose a Decision Log entry. Do not pick one and
 
 ## Workflow
 
+### Approval-gated operating mode
+
+Repository and GitHub state transitions — including issue creation, branch and synchronization
+operations, progress-state updates, commits, pushes, pull requests, and merges — require
+per-operation approval. Present the exact operation separately, wait, and verify its real output
+before continuing. Approval may be satisfied either by the operator executing the operation
+externally and returning its output or by approving that single tool call. File drafting and edits
+are not otherwise state transitions and may proceed after the issue, synchronized `main`, and feature
+branch are verified. Never batch multiple state transitions into one approval.
+
 Work the backlog in order. One task = one branch = one PR.
 
 `docs/project/implementation-backlog.md` is the frozen, checksum-protected **plan** — never tick its
 checkboxes casually. `docs/project/progress.md` is the living **state**: what is actually done, what
-is next. Update `progress.md` in the same commit that completes a task.
+is next. Update `progress.md` in the same PR that completes a task.
 
 1. Read the task entry in `docs/project/implementation-backlog.md`, its `Depends on`, and its
    `Contract coverage`.
