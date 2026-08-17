@@ -42,6 +42,9 @@ logs/
 tmp/
 temp/
 
+# Claude Code
+.claude/.cache/
+
 # IDEs and editors
 .idea/
 .vscode/
