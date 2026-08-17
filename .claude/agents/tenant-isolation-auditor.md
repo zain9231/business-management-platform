@@ -1,7 +1,7 @@
 ---
 name: tenant-isolation-auditor
 description: Hunts for any database operation on tenant-owned data that is not scoped by business_id in the statement itself, and for any response that leaks cross-tenant existence. Use proactively after implementing any repository, service, or endpoint, and before every contract gate.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob
 model: opus
 ---
 

@@ -4,6 +4,7 @@ Describe the change and the problem it solves.
 
 ## Backlog and contract traceability
 
+- Closes issue: Closes #N
 - Backlog task: `P?-??`
 - Owning contract or specification section:
 - Required contract tests:

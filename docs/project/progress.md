@@ -7,7 +7,7 @@
 recomputing the manifest and reconciling the `phase-0-complete` tag. It stays frozen as the accepted
 plan. This file records what has actually been done against it.
 
-Update it in the same commit that completes a task.
+Update it in the same PR that completes a task.
 
 Next task: P1-02
 
@@ -17,6 +17,7 @@ Next task: P1-02
 |---|---|---|---|
 | Phase 0 | 2026-08-16 | tag `phase-0-complete` | Ten artifacts accepted; manifest `a84e2b1f…2cf5f8` |
 | P1-01 | 2026-08-16 | `docs/protected-main-workflow` | Repo initialized; artifacts copied and checksum-verified; `.gitignore`, `.gitattributes`, `.editorconfig`, `LICENSE`, `CONTRIBUTING.md`, PR template in place; protected-main workflow documented |
+| Tooling correction PR A (#6) | 2026-08-17 | `fix/issue-6-task-lifecycle-policy` | Issue-before-branch lifecycle, live-status validation, approval-gated permissions, agent capability reductions, and PR-template traceability verified |
 
 ## In progress
 
