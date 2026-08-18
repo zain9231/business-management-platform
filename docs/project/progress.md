@@ -39,3 +39,7 @@ Next task: P1-03
   documentation are committed together, per backlog §2.
 - Record the PR number and the evidence that satisfied the task's contract coverage, not just a date.
 - Phase exit gates get their own row with the annotated tag name.
+- P1-07 must add `--generate-hashes` to the `pip-compile` invocation that produces
+  `backend/requirements.txt`. Pinning by version (P1-02) establishes trust once, at generation time;
+  hash pinning verifies it on every install thereafter. That is where residual supply-chain risk on
+  the pinned dependency set actually closes.
