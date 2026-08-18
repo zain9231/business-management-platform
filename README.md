@@ -56,7 +56,8 @@ Phase 0 produced the frozen planning and contract artifacts required before impl
 - Bookings contract
 - Accepted implementation backlog
 
-Implementation proceeds in strict backlog order. The current task is **P1-03: implement typed environment configuration**. Progress against the backlog is tracked in `docs/project/progress.md`.
+Implementation proceeds in strict backlog order. Current task status is tracked in
+`docs/project/progress.md`.
 
 ## Project documentation
 
