@@ -3,6 +3,10 @@
 FastAPI application package. Pinned dependency source is `pyproject.toml`; `requirements.txt` is a
 generated export and must never be hand-edited.
 
+`httpx2` (not `httpx`) is the pinned test-client dependency: it is what `starlette.testclient`
+actually imports when present (`import httpx2 as httpx`, tried before the deprecated `httpx` path).
+See PR #11 for the supply-chain verification behind that pin.
+
 ## Setup
 
 ```bash
