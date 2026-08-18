@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "business-management-platform-backend"
+version = "0.1.0"
+description = "Contract-first, multi-tenant modular monolith backend for appointment-based service businesses."
+requires-python = "==3.13.*"
+dependencies = [
+    "fastapi==0.141.1",
+    "pydantic==2.13.4",
+    "uvicorn[standard]==0.52.3",
+    "sqlalchemy==2.0.52",
+    "alembic==1.19.1",
+    "psycopg[binary]==3.3.4",
+    "pyjwt==2.13.0",
+    "argon2-cffi==25.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "httpx2==2.11.0",
+    "ruff==0.16.3",
+    "mypy==2.3.1",
+    "pip-tools==7.6.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
