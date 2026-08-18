@@ -14,7 +14,7 @@ python -m venv .venv
 ## Start the backend
 
 ```bash
-.venv/Scripts/uvicorn app.main:app --reload
+.venv/Scripts/uvicorn app.main:app --reload     # Windows; use .venv/bin/uvicorn on Linux/macOS
 ```
 
 `GET /health/live` returns `{"status": "live"}` once the process is up.
@@ -22,7 +22,7 @@ python -m venv .venv
 ## Tests
 
 ```bash
-.venv/Scripts/pytest
+.venv/Scripts/pytest     # Windows; use .venv/bin/pytest on Linux/macOS
 ```
 
 Database configuration, Docker Compose, linting, type checking, migrations, and the full test
