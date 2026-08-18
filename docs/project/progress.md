@@ -38,6 +38,7 @@ Next task: P1-03
 | Chore | Completed | Branch / PR | Evidence |
 |---|---|---|---|
 | Gitignore `backend/.claude/` session cache (#14) | 2026-08-18 | `chore/issue-14-gitignore-backend-claude` | Generalized `.gitignore`'s `.claude/.cache/` line to `**/.claude/.cache/`; `git status --porcelain --ignored` before/after shows `backend/.claude/` move from untracked to ignored, no tracked file changed classification |
+| Consolidate Git/GitHub operating rules (#16) | 2026-08-19 | `docs/issue-16-git-operating-rules` | Added `docs/project/git-operating-rules.md` as the single owner of mechanical Git/GitHub command rules, labeled by provenance; removed the bundled `gh pr merge --squash --delete-branch` restatement from `CLAUDE.md:85`, `CONTRIBUTING.md:70`, `.claude/skills/ship-task/SKILL.md:113`, and `.claude/hooks/guard_git.py:19-21`/`:37` (message strings only, matcher/blocking logic unchanged — confirmed by diff); documented the guard's inverted coverage as a post-P1-07 deferred item |
 
 ## Notes
 

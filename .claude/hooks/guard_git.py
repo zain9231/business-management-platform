@@ -18,8 +18,8 @@ PR_WORKFLOW = (
     "  git commit\n"
     "  git push -u origin <branch>\n"
     "  gh pr create --title \"<title>\" --body-file <reviewed-template-copy>\n"
-    "  gh pr merge --squash --delete-branch\n"
-    "See CONTRIBUTING.md 'Protected main workflow'."
+    "  gh pr merge <number> --squash   (no --delete-branch; branch deletion is a separate step)\n"
+    "See docs/project/git-operating-rules.md for the full canonical sequence."
 )
 
 # (compiled pattern, reason)
@@ -34,7 +34,8 @@ RULES: list[tuple[re.Pattern[str], str]] = [
     ),
     (
         re.compile(r"\bgit\s+push\b[^\n]*\s--delete\b"),
-        "BLOCKED: deleting a remote ref. Delete branches via 'gh pr merge --delete-branch'.",
+        "BLOCKED: deleting a remote ref this way. See docs/project/git-operating-rules.md step c "
+        "for the approved remote-branch-deletion command.",
     ),
     (
         re.compile(r"\bgit\s+(?:rebase|filter-branch|reset)\b[^\n]*\s(?:--hard\b|--root\b)|\bgit\s+filter-branch\b"),
