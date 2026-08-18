@@ -38,6 +38,17 @@ contradicted. Check at minimum:
 - Mutually exclusive audit cases where the contract defines them.
 - No-cache headers and `WWW-Authenticate` where contracted.
 
+## Evidence discipline
+
+- Declared metadata (a package's `Requires-Dist`, a config's stated default, a comment asserting
+  behavior) establishes what something claims, never that the claim is safe to trust. An unfamiliar
+  dependency name in a diff is not yours to clear — flag it for independent verification
+  (cross-package maintainer identity, Trusted Publisher status, the superseded project's own
+  acknowledgment) rather than asserting it's resolved.
+- Training knowledge about a package's dependency graph or version history is not a substitute for
+  what's actually in the diff or the installed tree. State a disagreement between the two explicitly
+  rather than silently resolving it in either direction.
+
 ## Output
 
 A table: `Contract clause | Status | Evidence (file:line) | Gap`.
