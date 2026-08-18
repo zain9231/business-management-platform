@@ -56,7 +56,7 @@ Phase 0 produced the frozen planning and contract artifacts required before impl
 - Bookings contract
 - Accepted implementation backlog
 
-Implementation proceeds in strict backlog order. The current task is **P1-01: initialize the repository structure and development workflow**.
+Implementation proceeds in strict backlog order. The current task is **P1-03: implement typed environment configuration**. Progress against the backlog is tracked in `docs/project/progress.md`.
 
 ## Project documentation
 
@@ -71,7 +71,8 @@ Implementation proceeds in strict backlog order. The current task is **P1-01: in
 
 ## Local development
 
-The executable application scaffold does not exist yet. Prerequisites, environment setup, Docker commands, migrations, tests, linting, and type-checking commands will be added during Phase 1 and documented under backlog task P1-08.
+The backend scaffold exists as of P1-02: `cd backend && python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"`, then `.venv/Scripts/uvicorn app.main:app --reload` (Windows; use `.venv/bin/` on Linux/macOS). See `backend/README.md`.
+Docker commands, migrations, database-backed tests, linting, and type-checking commands are added during the rest of Phase 1 and documented in full under backlog task P1-08.
 
 ## Phase 0 artifact verification
 
