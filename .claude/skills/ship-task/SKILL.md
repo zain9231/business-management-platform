@@ -107,29 +107,27 @@ Do not use `--fill`, and do not create a second template.
 
 ## 7. Merge
 
-Wait for CI. Then:
+Before running any merge command, re-read the canonical sequence in
+`docs/project/git-operating-rules.md` and confirm the command you are about to run matches it
+exactly.
+
+Wait for CI. Then run that file's step **a**:
 
 ```bash
-gh pr merge <number> --squash --delete-branch
+gh pr merge <number> --squash
 ```
 
-Never push to `main` directly. Never use `--admin` or disable `enforce_admins` unless I ask
-explicitly and say why.
+No `--delete-branch`. Never push to `main` directly. Never use `--admin` or disable `enforce_admins`
+unless I ask explicitly and say why.
 
-## 8. Sync local main
+## 8. Sync main and clean up branches
 
-After the merge is verified:
-
-```bash
-git switch main
-```
-
-```bash
-git pull --ff-only
-```
+After the merge is verified, run `docs/project/git-operating-rules.md` steps **b** through **e** as
+four separate approved transitions, in that order: sync local main, delete the remote branch, delete
+the local branch, then `git fetch --prune`.
 
 For repository and GitHub state transitions — synchronization, progress updates, commits, pushes, PR
-creation, merges, and post-merge synchronization — present one operation at a time and wait for
-per-operation approval. Approval may be the operator executing it externally and returning its
-output, or approval of that single tool call. Verify the real output before presenting the next
-transition. Squash-merge only after explicit approval.
+creation, the merge, remote and local branch deletion, and the final prune — present one operation at
+a time and wait for per-operation approval. Approval may be the operator executing it externally and
+returning its output, or approval of that single tool call. Verify the real output before presenting
+the next transition. Squash-merge only after explicit approval.

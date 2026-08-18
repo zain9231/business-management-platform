@@ -57,17 +57,9 @@ After introducing or changing formatting, line-ending, or pre-commit tooling, ve
 
 ## Protected main workflow
 
-Direct pushes to `main` are blocked. Normal development follows this sequence:
-
-    git switch main
-    git pull --ff-only
-    git switch -c <type>/<backlog-task-description>
-    # make the change and run its required checks
-    git add .
-    git commit
-    git push -u origin <branch-name>
-    gh pr create
-    gh pr merge --squash --delete-branch
+Direct pushes to `main` are blocked. The full branch, commit, push, PR, merge, and branch-deletion
+command sequence is the single responsibility of `docs/project/git-operating-rules.md` — follow it
+exactly; do not improvise a variant here.
 
 Pull requests require zero approvals until collaborators join. Required status
 checks stay disabled until P1-07 delivers a working CI workflow.

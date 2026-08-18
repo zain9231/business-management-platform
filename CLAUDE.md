@@ -82,7 +82,10 @@ Use `/task-start <task-id>` to open a task and `/ship-task` to close it.
 - Branch: `<type>/<task-id>-<short-description>` — e.g. `feat/p3-01-jwt-issuance`, `test/p4c-07-audit-rollback`.
 - Commit: Conventional Commits imperative — `feat:`, `fix:`, `test:`, `docs:`, `chore:`.
 - One coherent change plus its tests and docs per commit.
-- `main` is protected. Never commit or push directly to it. Always branch → PR → `gh pr merge --squash --delete-branch`.
+- `main` is protected. Never commit or push directly to it. Always branch → PR → merge. Merging a PR,
+  deleting its remote branch, and deleting its local branch are three separate approvals — never
+  bundle `--delete-branch` into the merge command. Full command sequence and every other Git/GitHub
+  mechanical rule: `docs/project/git-operating-rules.md`.
 - Never bypass branch protection or disable `enforce_admins` unless I explicitly ask.
 
 ### Shell policy pin
