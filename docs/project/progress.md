@@ -18,6 +18,7 @@ Next task: P1-02
 | Phase 0 | 2026-08-16 | tag `phase-0-complete` | Ten artifacts accepted; manifest `a84e2b1f…2cf5f8` |
 | P1-01 | 2026-08-16 | `docs/protected-main-workflow` | Repo initialized; artifacts copied and checksum-verified; `.gitignore`, `.gitattributes`, `.editorconfig`, `LICENSE`, `CONTRIBUTING.md`, PR template in place; protected-main workflow documented |
 | Tooling correction PR A (#6) | 2026-08-17 | `fix/issue-6-task-lifecycle-policy` | Issue-before-branch lifecycle, live-status validation, approval-gated permissions, agent capability reductions, and PR-template traceability verified |
+| Tooling correction PR B (#8) | 2026-08-18 | `fix/issue-8-settings-safety` | Narrowed `.env` read deny to preserve `.env.example`; pinned `CLAUDE_CODE_USE_POWERSHELL_TOOL=0` with the shell-policy dependency recorded in `CLAUDE.md`; checksum manifest and settings JSON validity reverified |
 
 ## In progress
 

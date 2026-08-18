@@ -42,6 +42,9 @@ owns the subject, tell me, and propose a Decision Log entry. Do not pick one and
 - **Bookings have no hard delete.** `DELETE /bookings/{id}` is `405 method_not_allowed`.
 - **Never edit the ten checksum-protected Phase 0 artifacts** listed in
   `docs/project/phase-0-artifacts.sha256`. Formatters must not touch them either.
+- **Any new dotenv filename must be added to the `.env` deny list** in `.claude/settings.json`. That
+  list denies Claude's built-in file tools only — it does not cover a Bash subprocess reading the file
+  (`cat .env` and equivalents).
 
 ## Workflow
 
@@ -81,6 +84,14 @@ Use `/task-start <task-id>` to open a task and `/ship-task` to close it.
 - One coherent change plus its tests and docs per commit.
 - `main` is protected. Never commit or push directly to it. Always branch → PR → `gh pr merge --squash --delete-branch`.
 - Never bypass branch protection or disable `enforce_admins` unless I explicitly ask.
+
+### Shell policy pin
+
+`.claude/settings.json` sets `CLAUDE_CODE_USE_POWERSHELL_TOOL: "0"` because the native PowerShell tool
+rolls out progressively on Windows and can activate without action. The git guard hook and the
+`Bash(git *)` / `Bash(gh *)` permission rules assume a Bash-only tool surface. Lifting this pin
+requires moving the hook matchers to `Bash|PowerShell`, adding `PowerShell(...)` equivalents for those
+permission rules, and testing both paths — not just flipping the flag.
 
 ## Commands
 
