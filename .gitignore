@@ -43,7 +43,7 @@ tmp/
 temp/
 
 # Claude Code
-.claude/.cache/
+**/.claude/.cache/
 
 # IDEs and editors
 .idea/

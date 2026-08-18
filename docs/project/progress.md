@@ -33,6 +33,12 @@ Next task: P1-03
 |---|---|---|
 | — | — | — |
 
+## Chores
+
+| Chore | Completed | Branch / PR | Evidence |
+|---|---|---|---|
+| Gitignore `backend/.claude/` session cache (#14) | 2026-08-18 | `chore/issue-14-gitignore-backend-claude` | Generalized `.gitignore`'s `.claude/.cache/` line to `**/.claude/.cache/`; `git status --porcelain --ignored` before/after shows `backend/.claude/` move from untracked to ignored, no tracked file changed classification |
+
 ## Notes
 
 - A task is complete only when its implementation, required automated tests, and affected
