@@ -21,6 +21,13 @@
 
 ```text
 business-management-platform/
+├── .claude/
+│   ├── agents/
+│   ├── hooks/
+│   ├── rules/
+│   ├── skills/
+│   ├── settings.json
+│   └── settings.local.json.example
 ├── .gitattributes
 ├── .github/
 │   ├── workflows/
@@ -47,7 +54,8 @@ business-management-platform/
 │   │   │   │   │   ├── staff.py
 │   │   │   │   │   └── users.py
 │   │   │   │   └── router.py
-│   │   │   └── dependencies.py
+│   │   │   ├── dependencies.py
+│   │   │   └── health.py
 │   │   ├── core/
 │   │   │   ├── config.py
 │   │   │   ├── errors.py
@@ -130,7 +138,9 @@ business-management-platform/
 │   │   ├── implementation-backlog.md
 │   │   ├── phase-0-artifacts.sha256
 │   │   ├── requirements-sources.md
-│   │   └── file-structure.md
+│   │   ├── file-structure.md
+│   │   ├── git-operating-rules.md
+│   │   └── progress.md
 │   ├── architecture/
 │   │   ├── erd/
 │   │   │   ├── source/
@@ -157,10 +167,15 @@ business-management-platform/
 ├── scripts/
 │   ├── seed_demo_data.py
 │   └── verify_schema_parity.py
+├── tests/
+│   └── hooks/
+│       └── test_context_budget.py
 ├── .editorconfig
 ├── .env.example
 ├── .gitignore
 ├── .pre-commit-config.yaml
+├── CLAUDE.local.md.example
+├── CLAUDE.md
 ├── compose.yaml
 ├── CONTRIBUTING.md
 ├── LICENSE
@@ -168,6 +183,14 @@ business-management-platform/
 ```
 
 This is the target hierarchy, not a requirement to commit empty directories. Files and folders that belong to later backlog tasks are added only when their task begins. Python package directories contain `__init__.py`; intentionally reserved non-Python directories use a short `README.md` instead of indiscriminate `.gitkeep` files. The Phase 1 frontend may be a minimal containerized placeholder, while `users-api-contract.md` is created and accepted in P4U-01 before user endpoints are implemented.
+
+Three entries above sit outside the Specification section 14 backend layout and are recorded here so the hierarchy stays authoritative rather than merely descriptive.
+
+`backend/app/api/health.py` holds the liveness and readiness routes. It sits beside `v1/` rather than inside it because the Specification section 52 health endpoint is infrastructure, not a versioned API resource. `GET /health/live` is deliberately unreachable under `/api/v1`, and P1-02's test suite asserts that.
+
+`tests/` at the repository root holds tests for repository tooling — currently the `.claude/` hooks. It is separate from `backend/tests/` because those tests exercise the development harness, not the application, and must not be collected by the backend suite or counted in its coverage.
+
+`.claude/`, `CLAUDE.md`, and `CLAUDE.local.md.example` configure the Claude Code working environment: subagents, hooks, path-scoped rules, and skills. `.claude/settings.local.json` and `CLAUDE.local.md` are personal and git-ignored; only their `.example` counterparts are tracked. `.env.example` is at the repository root, not under `backend/`; `compose.yaml` is also at the root and reads it from there, so one file serves every service.
 
 `backend/pyproject.toml` is the single editable source of dependency and tool configuration. `backend/requirements.txt` exists only to satisfy the frozen §14 layout and container/deployment compatibility: it is a generated, pinned export from `pyproject.toml`, must carry a `DO NOT EDIT` header, and is regenerated and checked in CI whenever dependencies change. It is never hand-edited or maintained as an independent dependency list.
 
