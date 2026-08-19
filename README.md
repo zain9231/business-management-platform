@@ -120,4 +120,10 @@ Do not add old downloads, review drafts, numbered copies such as `(1)` or `(2)`,
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+Copyright (c) 2026 Zain-ul-Abideen. All rights reserved. See [LICENSE](LICENSE).
+
+This repository is source-available for review, not open source. It is published so the engineering
+process — specification, API contracts, tests, and commit history — can be read by prospective
+employers and collaborators. No licence to use, copy, modify, or distribute the software is granted.
+Commits up to and including `b1c9f78` were published under the MIT License and remain
+licensed under it for those versions only.
