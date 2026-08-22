@@ -44,7 +44,10 @@ If it is not reachable, say so — do not report a static comparison as a verifi
 - Customer email, staff email, and service name are deliberately **non-unique** within a tenant.
 - User email is globally unique and lowercased.
 - Bookings and payments share a composite foreign key relationship.
-- Service duration bounds (1–1440) and price scale are enforced at the database level.
+- Price scale (`numeric(12,2)`, `price >= 0`) is enforced at the database level. The 1–1,440 duration
+  bound is a Services contract rule, not a database constraint — the DBML only requires
+  `duration_minutes > 0`. Do not flag a correct migration as divergent for lacking a
+  `CHECK (duration_minutes <= 1440)`; that constraint does not belong in the DBML.
 - No hard-delete path exists for bookings.
 
 ## Output

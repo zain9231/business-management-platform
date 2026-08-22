@@ -12,7 +12,12 @@ exploitable findings with concrete impact, not generic advice.
 
 - Algorithm is pinned. `none` and unexpected algorithms are rejected before any claim is read.
 - Required claims verified: `iss`, `aud`, `sub`, `type`, `jti`, `iat`, `exp`. Missing, malformed, or
-  wrong values fail **uniformly** — same status, same code, same body.
+  wrong values fail **uniformly** — same status, same code, same body. The one deliberate exception:
+  on protected endpoints, an expired **access** token returns `401 token_expired`, distinguished from
+  every other verification failure so the client knows a silent refresh is worth attempting. Refresh
+  and logout never make this distinction — every token failure there is uniform `401 invalid_token`,
+  including expiry. Do not flag the protected-endpoint distinction as a disclosure defect; do flag it
+  if it leaks onto refresh or logout.
 - Access and refresh types are not interchangeable. Type confusion is rejected.
 - Access tokens carry **no** role, email, or business claim. Role and active state load from the
   database on every protected request, so a role change or deactivation takes effect on the very

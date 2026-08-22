@@ -15,8 +15,8 @@ Contract tests are numbered in their contract. Keep the number visible so the tr
 `docs/project/implementation-backlog.md` §4 stays auditable:
 
 ```python
-def test_c07_login_unknown_email_is_byte_identical_to_wrong_password(...):
-    """Auth Contract test 1 — uniform credential failure."""
+def test_login_unknown_email_is_byte_identical_to_wrong_password(...):
+    """Auth Contract test 2 — uniform credential failure."""
 ```
 
 Name the file after the resource (`tests/contract/test_bookings_contract.py`) and reference the

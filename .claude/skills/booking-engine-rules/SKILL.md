@@ -43,8 +43,9 @@ to UTC; naive, invalid, and past timestamps are rejected with a field-specific v
 
 UTC intervals map into business-local dates and weekdays, then against the stored windows.
 
-- No availability rows for that weekday → `staff_not_bookable`.
-- Inside a gap or outside every window → `outside_availability`.
+- No availability rows at all → `staff_not_bookable`.
+- Rows exist but do not continuously contain the interval — including a weekday with no windows,
+  a gap, or outside every window → `outside_availability`.
 - Boundary containment is exact.
 - A stored row never crosses midnight. An exact `24:00:00` end joins to the next day's `00:00:00`
   start into continuous availability — while real gaps stay gaps.
