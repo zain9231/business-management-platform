@@ -39,10 +39,13 @@ reserved by the conventions, which must reveal neither the other tenant nor the 
 Tenant scope is the outer boundary; role scope narrows it further. Both apply.
 
 - **Administrator / Manager** — tenant-wide.
-- **Staff** — self-only, resolved through **all** staff rows linked to the authenticated user.
-  Staff see all and only their own linked rows; an unlinked staff id returns a non-enumerating `404`,
-  including for detail reads and availability. Colleague identities must not be resolvable through
-  staff or booking endpoints.
+- **Staff, on staff and booking endpoints** — self-only, resolved through **all** staff rows linked to
+  the authenticated user. Staff see all and only their own linked rows; an unlinked staff id returns a
+  non-enumerating `404`, including for detail reads and availability. Colleague identities must not be
+  resolvable through staff or booking endpoints.
+- **Staff, on customers and services** — full tenant-scoped read, no writes. Customers: the accepted
+  Decision Log clarification of 2026-08-16 gives Staff full read on `GET /customers` and
+  `GET /customers/{id}`. Services: Staff have full read on both endpoints. Neither is self-only.
 
 Staff may create bookings only for linked rows, may update notes, and may perform assigned-staff
 transitions. Staff may not reschedule, reassign, or cancel.
