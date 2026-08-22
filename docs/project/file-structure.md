@@ -169,7 +169,9 @@ business-management-platform/
 │   └── verify_schema_parity.py
 ├── tests/
 │   └── hooks/
-│       └── test_context_budget.py
+│       ├── test_context_budget.py
+│       ├── test_guard_git.py
+│       └── test_hook_inventory.py
 ├── .editorconfig
 ├── .env.example
 ├── .gitignore

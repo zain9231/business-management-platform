@@ -58,12 +58,14 @@ Every hook fails open — if Python is missing or a script errors, the session c
 
 | Event | Script | Effect |
 |---|---|---|
-| `SessionStart` | `session_context.py` | prints branch, dirty-file count, last commit, next unchecked backlog task |
+| `SessionStart` | `session_context.py` | prints branch, dirty-file count, last commit, and the next task read from `docs/project/progress.md` |
 | `PreToolUse` (edits) | `guard_protected_paths.py` | blocks writes to the ten checksum-protected artifacts, `.env`, keys |
-| `PreToolUse` (Bash) | `guard_git.py` | blocks commits on `main`, direct pushes to `main`, force pushes, `enforce_admins` bypass, history rewrites |
+| `PreToolUse` (Bash) | `guard_git.py` | blocks commits on `main`, direct pushes to `main`, force pushes, `enforce_admins` disable, history rewrites |
 | `PostToolUse` (edits) | `format_after_edit.py` | runs Ruff, or Prettier/ESLint, on the edited file — silent no-op until those tools exist |
+| `UserPromptSubmit` | `context_budget.py` | one notice per threshold when session token use crosses 150K or 300K |
+| `PostCompact` | `context_budget.py --reset` | clears the fired-threshold state so the notices can fire again |
 
-**On Linux or WSL**, change `python` to `python3` in the four `command` entries in `settings.json`.
+**On Linux or WSL**, change `python` to `python3` in the six `command` entries in `settings.json`.
 On Windows the launcher is `python`, which is what is configured.
 
 Test a hook by hand:
