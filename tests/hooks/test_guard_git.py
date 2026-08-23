@@ -5,6 +5,11 @@ test_context_budget.py drives context_budget.py. Every payload's cwd is a fresh
 tmp_path with no git repository, so guard_git.current_branch() returns None and the
 post-rules main-branch fallback stays inert -- these tests measure the RULES
 matchers alone, independent of whatever branch the checkout is actually on.
+
+The enforce_admins matcher is a case-insensitive co-occurrence check, not flag adjacency: it denies
+any command containing both "enforce_admins" and a DELETE token, regardless of how the method flag's
+value is constructed. Do not narrow it back to matching DELETE only when adjacent to --method or -X --
+that form is defeated by a shell variable or command substitution feeding the flag.
 """
 
 from __future__ import annotations
@@ -67,6 +72,18 @@ MULTILINE_AND_INDIRECT_DELETE_FORMS = {
     ),
 }
 
+METHOD_INDIRECTION_DELETE_FORMS = {
+    "method-variable": (
+        f'M=DELETE; gh api --method "$M" "{ENFORCE_ADMINS_URL}"'
+    ),
+    "method-command-substitution": (
+        f'gh api --method "$(echo DELETE)" "{ENFORCE_ADMINS_URL}"'
+    ),
+    "method-backtick-substitution": (
+        f'gh api --method `echo DELETE` "{ENFORCE_ADMINS_URL}"'
+    ),
+}
+
 MENTION_DOES_NOT_EXEMPT_OTHER_MATCHERS = {
     "force-push": 'git push --force origin main  # not an enforce_admins call',
     "history-rewrite": 'git rebase --root  # see enforce_admins docs for the emergency case',
@@ -96,6 +113,15 @@ def test_enforce_admins_delete_spellings_stay_denied(command, tmp_path):
     ids=list(MULTILINE_AND_INDIRECT_DELETE_FORMS),
 )
 def test_enforce_admins_multiline_and_indirect_delete_forms_stay_denied(command, tmp_path):
+    assert_denied(command, tmp_path)
+
+
+@pytest.mark.parametrize(
+    "command",
+    METHOD_INDIRECTION_DELETE_FORMS.values(),
+    ids=list(METHOD_INDIRECTION_DELETE_FORMS),
+)
+def test_enforce_admins_method_indirection_forms_are_denied(command, tmp_path):
     assert_denied(command, tmp_path)
 
 

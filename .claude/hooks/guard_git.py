@@ -22,10 +22,6 @@ PR_WORKFLOW = (
     "See docs/project/git-operating-rules.md for the full canonical sequence."
 )
 
-# A DELETE method flag, in any of gh's accepted spellings, anchored so it cannot
-# match inside a longer token.
-DELETE_METHOD = r"(?:^|\s)(?:--method[=\s]+|-X[=\s]*)DELETE\b"
-
 # (compiled pattern, reason)
 RULES: list[tuple[re.Pattern[str], str]] = [
     (
@@ -50,11 +46,13 @@ RULES: list[tuple[re.Pattern[str], str]] = [
         "BLOCKED: 'git clean -x' removes ignored files including .env and local database volumes.",
     ),
     (
-        # Method-aware: the DELETE half of CONTRIBUTING.md's emergency bypass stays blocked, the
-        # POST restore half does not, so branch protection can always be put back.
+        # Co-occurrence, not flag adjacency: a method value built from a shell variable or
+        # $()/backtick substitution defeats a "DELETE next to --method/-X" check while still
+        # putting the literal word DELETE somewhere in the command. The POST restore half of
+        # CONTRIBUTING.md's emergency bypass stays allowed because it contains no DELETE token.
         re.compile(
-            rf"enforce_admins[\s\S]*{DELETE_METHOD}|{DELETE_METHOD}[\s\S]*enforce_admins",
-            re.IGNORECASE | re.MULTILINE,
+            r"enforce_admins[\s\S]*DELETE\b|DELETE\b[\s\S]*enforce_admins",
+            re.IGNORECASE,
         ),
         "BLOCKED: disabling branch-protection admin enforcement. CONTRIBUTING.md permits this only "
         "as an emergency repair the user explicitly authorizes. Ask first, and restore it immediately after.",
