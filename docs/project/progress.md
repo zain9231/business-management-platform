@@ -59,3 +59,5 @@ Next task: P1-03
   `backend/requirements.txt`. Pinning by version (P1-02) establishes trust once, at generation time;
   hash pinning verifies it on every install thereafter. That is where residual supply-chain risk on
   the pinned dependency set actually closes.
+- Audit 2 F6 assignment: P4T-03 will author Staff Contract tests 17–18. Confirm the assignment when
+  Phase 4B opens; do not edit the frozen backlog to reconcile its two traceability mechanisms.

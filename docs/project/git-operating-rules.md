@@ -9,12 +9,17 @@ file instead.
 
 ## Branch and commit naming
 
+Historical provenance marked "consolidated from" refers to the source snapshot immediately before
+the consolidation commit: `9d9c76caa3b9eedfb10d540442c3b16699832edd`. Section headings and named
+symbols below identify material as it stood in that snapshot; resolve them with
+`git show 9d9c76caa3b9eedfb10d540442c3b16699832edd:<path>`, not against the current file.
+
 | Rule | Provenance |
 |---|---|
-| Branch: `<type>/<issue-or-task-id>-<short-description>`, e.g. `feat/p3-01-jwt-issuance` | consolidated from `CLAUDE.md:83`, `CONTRIBUTING.md:20`, `.claude/skills/task-start/SKILL.md:85-89` |
-| `<type>` is `feat`, `fix`, `test`, `docs`, or `chore` | consolidated from `.claude/skills/task-start/SKILL.md:88` |
-| Commit messages: Conventional Commits, imperative mood, one coherent change per commit | consolidated from `CLAUDE.md:84`, `CONTRIBUTING.md:24-34`, `.claude/skills/ship-task/SKILL.md:73-79` |
-| `main` is protected; never commit or push to it directly | consolidated from `CLAUDE.md:85`, `CONTRIBUTING.md:58-70`; mechanically enforced by `.claude/hooks/guard_git.py`'s branch-check |
+| Branch: `<type>/<issue-or-task-id>-<short-description>`, e.g. `feat/p3-01-jwt-issuance` | consolidated from `CLAUDE.md` **Branches and commits**, `CONTRIBUTING.md` **Branch workflow**, and `.claude/skills/task-start/SKILL.md` **Create the feature branch from synchronized main** |
+| `<type>` is `feat`, `fix`, `test`, `docs`, or `chore` | consolidated from `.claude/skills/task-start/SKILL.md` **Create the feature branch from synchronized main** |
+| Commit messages: Conventional Commits, imperative mood, one coherent change per commit | consolidated from `CLAUDE.md` **Branches and commits**, `CONTRIBUTING.md` **Commit messages**, and `.claude/skills/ship-task/SKILL.md` **Commit** |
+| `main` is protected; never commit or push to it directly | consolidated from `CLAUDE.md` **Branches and commits** and `CONTRIBUTING.md` **Protected main workflow**; mechanically enforced by `.claude/hooks/guard_git.py`'s direct-push matcher and `main()` branch check |
 
 ## The canonical merge and branch-deletion sequence
 
@@ -31,8 +36,8 @@ e. `git fetch --prune` — clear the stale remote-tracking ref left by step c.
 
 | Step | Provenance |
 |---|---|
-| a. Merge without `--delete-branch` | consolidated and corrected from `CLAUDE.md:85`, `CONTRIBUTING.md:70`, `.claude/skills/ship-task/SKILL.md:113`, `.claude/hooks/guard_git.py:19-21` and `:37` — all five previously stated the bundled `gh pr merge --squash --delete-branch`; that form is removed here |
-| b. Sync local main | consolidated from `.claude/skills/ship-task/SKILL.md:119-129`, `.claude/skills/task-start/SKILL.md:44-58` |
+| a. Merge without `--delete-branch` | consolidated and corrected from `CLAUDE.md` **Branches and commits**, `CONTRIBUTING.md` **Protected main workflow**, `.claude/skills/ship-task/SKILL.md` **Merge**, and `.claude/hooks/guard_git.py`'s `PR_WORKFLOW` and remote-ref-deletion rule — all five previously stated the bundled `gh pr merge --squash --delete-branch`; that form is removed here |
+| b. Sync local main | consolidated from `.claude/skills/ship-task/SKILL.md` **Sync local main** and `.claude/skills/task-start/SKILL.md` **Sync main and confirm a clean working tree** |
 | c. Remote deletion via `gh api -X DELETE .../git/refs/heads/<branch>` | newly codified from operating experience — audit of `.claude/hooks/guard_git.py` found this is the only branch-deletion form that is order-independent and unconditionally unblocked. `git push origin --delete <branch>` is always blocked; `git push origin :<branch>` is blocked whenever local HEAD is `main`, which step b puts it on |
 | d. `git branch -D <branch>` | newly codified from operating experience — no local-branch-deletion rule existed anywhere in the repository before this file. `-d` fails because the branch tip is not an ancestor of `main` after a squash merge; `-D` is required |
 | e. `git fetch --prune` | newly codified from operating experience — four stale remote-tracking refs accumulated before they were pruned as a separate housekeeping item |
@@ -41,9 +46,10 @@ e. `git fetch --prune` — clear the stale remote-tracking ref left by step c.
 
 - Push explicitly before creating the PR: `git push -u origin <branch>`. `gh pr create` will push an
   unpushed branch itself if this step is skipped, which bundles two state transitions into one
-  approval. Consolidated from `CONTRIBUTING.md:68`, `.claude/skills/ship-task/SKILL.md:87`.
+  approval. Consolidated from `CONTRIBUTING.md` **Protected main workflow** and
+  `.claude/skills/ship-task/SKILL.md` **Push and open the pull request**.
 - `gh pr create --title "<title>" --body-file <path>`. Never `--fill`. Consolidated from
-  `.claude/skills/ship-task/SKILL.md:96-106`.
+  `.claude/skills/ship-task/SKILL.md` **Push and open the pull request**.
 - The PR title is byte-identical to the commit subject. Newly codified from operating experience.
 - The merge body is derived from the commit, not typed fresh. Newly codified from operating
   experience.
@@ -57,27 +63,31 @@ Any file passed as a commit, PR, or merge body:
 - is deleted whether the command it fed succeeded or failed;
 - is UTF-8, LF line endings only, no CR bytes, no BOM.
 
-Consolidated from `.claude/skills/ship-task/SKILL.md:92-105` (PR body only — extended here to commit
-and merge bodies). The encoding constraints are newly codified from operating experience; no existing
-file states them.
+Consolidated from `.claude/skills/ship-task/SKILL.md` **Push and open the pull request** (PR body
+only — extended here to commit and merge bodies). The encoding constraints are newly codified from
+operating experience; no existing file states them.
 
 ## Commit message mechanics
 
 - Never pass a multi-line message with `-m`. Use an editor or a body file. Newly codified from
-  operating experience — `.claude/skills/ship-task/SKILL.md:69-71` already shows `git commit` without
-  `-m` but never states the rule.
+  operating experience — `.claude/skills/ship-task/SKILL.md` **Commit** already shows `git commit`
+  without `-m` but never states the rule.
 - A blank line separates the commit subject from the body. Prove `%b` is non-empty after committing
   (`git log -1 --format=%b`). Newly codified from operating experience.
 
 ## Known guard gap
 
-`.claude/hooks/guard_git.py` blocks `git push origin --delete <branch>` always, blocks
-`git push origin :<branch>` only when local HEAD is `main`, and never inspects `gh pr merge` for
-`--delete-branch` or `gh api` at all. Its coverage is inverted relative to the sequence in this file:
-it blocks a form nobody needs here and lets through the bundled `gh pr merge --delete-branch` this
-file forbids. Correcting the matcher is deferred until after deferred item 8 gives the guards test
-coverage, and after P1-07. Until then the guard's printed guidance text is corrected to stop
-recommending the bundled command, but its matching and blocking behavior is unchanged. If the guard
-ever blocks a form this file requires, stop and report it — do not substitute an unblocked form to
-get around the block. A `PreToolUse` denial happens before permission rules are evaluated; no document
-overrides it.
+`.claude/hooks/guard_git.py` blocks `git push origin --delete <branch>` always and blocks
+`git push origin :<branch>` only when local HEAD is `main`. It does not block
+`gh pr merge --delete-branch`, so its branch-deletion coverage remains inverted relative to the
+sequence in this file: it blocks a form nobody needs here and lets through the bundled merge form
+this file forbids. The required step-c
+`gh api -X DELETE repos/{owner}/{repo}/git/refs/heads/<branch>` form remains intentionally unblocked.
+
+The guard separately inspects Bash command text for co-occurring `enforce_admins` and `DELETE` tokens.
+That branch-protection rule is covered by the root hook tests and does not close this branch-deletion
+gap. The root guard-test surface now exists, satisfying the test-surface part of the original
+deferral; changing branch-deletion matching remains deferred until after P1-07. Until then, if the
+guard ever blocks a form this file requires, stop and report it — do not substitute an unblocked form
+to get around the block. A `PreToolUse` denial happens before permission rules are evaluated; no
+document overrides it.

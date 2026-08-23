@@ -12,12 +12,8 @@ and a plan.
 
 ## Live-status rule
 
-`docs/project/progress.md` is authoritative for the current task. GitHub issues are authoritative for
-in-flight work. `docs/project/implementation-backlog.md` supplies scope, sequence, dependencies,
-acceptance criteria, and gates; its checkbox state is never a status source. If `progress.md` is
-unreadable or absent, has a missing or duplicate `Next task:` line, has a task identifier that fails
-the expected format, or names a task identifier not found in the backlog, stop: cannot determine
-current task. Do not infer from backlog checkboxes.
+The live-status rule is owned by `.claude/agents/backlog-navigator.md` under **Live-status rule**.
+Apply it before locating or opening a task.
 
 ## 1. Locate the task
 
@@ -81,12 +77,12 @@ must exist before any feature-branch creation command is presented.
 
 ## 5. Create the feature branch from synchronized main
 
-```bash
-git switch -c <type>/<task-id-lowercase>-<short-description>
-```
+Read the branch-name rule owned by `docs/project/git-operating-rules.md` under
+**Branch and commit naming**, then propose one exact conforming name. After it is approved:
 
-`<type>` is `feat`, `fix`, `test`, `docs`, or `chore`. Example:
-`feat/p2-03-customers-staff-services-migration`.
+```bash
+git switch -c <approved-branch-name>
+```
 
 Never work on `main`.
 

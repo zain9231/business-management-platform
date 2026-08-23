@@ -17,7 +17,9 @@ Material changes to frozen scope or architecture require an explicit documented 
 
 - Keep `main` in a working, reviewable state.
 - Create a focused branch for each backlog task or tightly related correction.
-- Use branch names such as `feat/p3-01-jwt-issuance`, `fix/tenant-filter`, `test/auth-refresh-rotation`, or `docs/readme-setup`.
+- Follow `docs/project/git-operating-rules.md` under **Branch and commit naming**. Conforming examples
+  include `feat/p3-01-jwt-issuance`, `fix/6-task-lifecycle-policy`,
+  `test/p3-04-auth-refresh-rotation`, and `docs/22-canonical-repository-records`.
 - Open a pull request before merging to `main`, even when working alone, once repository protection is configured.
 - Do not combine unrelated backlog tasks in one branch.
 

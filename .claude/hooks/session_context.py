@@ -4,15 +4,8 @@
 Keeps every session anchored to backlog order without spending context reading the 68 KB
 backlog file.
 
-Source of truth for "what's next" is `Next task: <id>` in docs/project/progress.md, because
-implementation-backlog.md is checksum-protected and its checkboxes cannot be ticked freely.
-
-`docs/project/progress.md` is authoritative for the current task. GitHub issues are authoritative for
-in-flight work. `docs/project/implementation-backlog.md` supplies scope, sequence, dependencies,
-acceptance criteria, and gates; its checkbox state is never a status source. If `progress.md` is
-unreadable or absent, has a missing or duplicate `Next task:` line, has a task identifier that fails
-the expected format, or names a task identifier not found in the backlog, stop: cannot determine
-current task. Do not infer from backlog checkboxes.
+The live-status rule this hook implements is owned by
+`.claude/agents/backlog-navigator.md` under **Live-status rule**.
 """
 
 from __future__ import annotations

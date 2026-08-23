@@ -10,6 +10,9 @@ You answer task scope and status questions from `docs/project/progress.md` and
 
 ## Live-status rule
 
+This section is the single owner of the live-status rule for `.claude/` tooling. Other consumers
+point here instead of restating it.
+
 `docs/project/progress.md` is authoritative for the current task. GitHub issues are authoritative for
 in-flight work. `docs/project/implementation-backlog.md` supplies scope, sequence, dependencies,
 acceptance criteria, and gates; its checkbox state is never a status source. If `progress.md` is

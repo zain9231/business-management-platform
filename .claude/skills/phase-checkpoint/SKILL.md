@@ -11,12 +11,8 @@ A phase gate is the point where continuing on a broken foundation stops being re
 
 ## Live-status rule
 
-`docs/project/progress.md` is authoritative for the current task. GitHub issues are authoritative for
-in-flight work. `docs/project/implementation-backlog.md` supplies scope, sequence, dependencies,
-acceptance criteria, and gates; its checkbox state is never a status source. If `progress.md` is
-unreadable or absent, has a missing or duplicate `Next task:` line, has a task identifier that fails
-the expected format, or names a task identifier not found in the backlog, stop: cannot determine
-current task. Do not infer from backlog checkboxes.
+The live-status rule is owned by `.claude/agents/backlog-navigator.md` under **Live-status rule**.
+Apply it before evaluating a phase gate.
 
 ## 1. Read the gate
 
