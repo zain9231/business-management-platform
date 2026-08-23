@@ -14,7 +14,7 @@ import sys
 
 PR_WORKFLOW = (
     "\n\nUse the documented workflow instead:\n"
-    "  git switch -c <type>/<task-id>-<description>\n"
+    "  git switch -c <approved-branch-name>\n"
     "  git commit\n"
     "  git push -u origin <branch>\n"
     "  gh pr create --title \"<title>\" --body-file <reviewed-template-copy>\n"

@@ -79,7 +79,8 @@ Use `/task-start <task-id>` to open a task and `/ship-task` to close it.
 
 ### Branches and commits
 
-- Branch: `<type>/<task-id>-<short-description>` — e.g. `feat/p3-01-jwt-issuance`, `test/p4c-07-audit-rollback`.
+- Branch naming is owned by `docs/project/git-operating-rules.md` under **Branch and commit naming**;
+  follow that rule instead of restating its pattern here.
 - Commit: Conventional Commits imperative — `feat:`, `fix:`, `test:`, `docs:`, `chore:`.
 - One coherent change plus its tests and docs per commit.
 - `main` is protected. Never commit or push directly to it. Always branch → PR → merge. Merging a PR,
