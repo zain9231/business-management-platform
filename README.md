@@ -72,7 +72,11 @@ Implementation proceeds in strict backlog order. Current task status is tracked 
 
 ## Local development
 
-The backend scaffold exists as of P1-02: `cd backend && python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"`, then `.venv/Scripts/uvicorn app.main:app --reload` (Windows; use `.venv/bin/` on Linux/macOS). See `backend/README.md`.
+The backend scaffold exists as of P1-02: `cd backend && python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"`, then `.venv/Scripts/uvicorn app.main:create_app --factory --reload` (Windows; use `.venv/bin/` on Linux/macOS). See `backend/README.md`.
+As of P1-03, required configuration must reach the backend process's environment before that command
+succeeds — copying `.env.example` to `.env` alone does not load it, and `JWT_SECRET` must replace the
+deliberately invalid sentinel. `backend/README.md` documents the full setting vocabulary and launch
+commands.
 Docker commands, migrations, database-backed tests, linting, and type-checking commands are added during the rest of Phase 1 and documented in full under backlog task P1-08.
 
 ## Phase 0 artifact verification
