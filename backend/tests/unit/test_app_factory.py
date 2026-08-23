@@ -1,4 +1,6 @@
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from app.main import create_app
 
@@ -22,3 +24,10 @@ def test_health_live_is_not_mounted_under_api_v1() -> None:
     response = client.get("/api/v1/health/live")
 
     assert response.status_code == 404
+
+
+def test_create_app_raises_on_invalid_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+    with pytest.raises(ValidationError):
+        create_app()

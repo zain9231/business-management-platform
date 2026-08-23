@@ -11,7 +11,7 @@ Update it in the same PR that completes a task.
 
 All dates in this file are UTC — the timezone `gh` reports merge and close times in — not local time.
 
-Next task: P1-03
+Next task: P1-04
 
 ## Completed
 
@@ -22,6 +22,7 @@ Next task: P1-03
 | Tooling correction PR A (#6) | 2026-08-17 | `fix/issue-6-task-lifecycle-policy` (PR #7) | Issue-before-branch lifecycle, live-status validation, approval-gated permissions, agent capability reductions, and PR-template traceability verified |
 | Tooling correction PR B (#8) | 2026-08-18 | `fix/issue-8-settings-safety` (PR #9) | Narrowed `.env` read deny to preserve `.env.example`; pinned `CLAUDE_CODE_USE_POWERSHELL_TOOL=0` with the shell-policy dependency recorded in `CLAUDE.md`; checksum manifest and settings JSON validity reverified |
 | P1-02 (#10) | 2026-08-18 | `feat/p1-02-backend-scaffold` (PR #11) | `backend/app/` package boundaries, pinned `pyproject.toml` dependencies and generated `requirements.txt`, `create_app()` factory, `GET /health/live`; 3 unit tests (factory identity, liveness 200, `/api/v1` non-mount) failed before implementation and pass after; `ruff format --check`, `ruff check`, and `mypy app` clean; backend verified starting from `uvicorn app.main:app --reload` and answering over the network |
+| P1-03 (#30) | 2026-08-23 | `feat/p1-03-typed-env-config` | Typed `Settings` model (`pydantic-settings`) in `backend/app/core/config.py` validating `DATABASE_URL` scheme, `JWT_SECRET` placeholder/sentinel/length, trimmed non-empty `JWT_ISSUER`/`JWT_AUDIENCE`, unique explicit-HTTP/HTTPS `CORS_ALLOWED_ORIGINS`, `ENVIRONMENT`, `LOG_LEVEL`, and positive token lifetimes, enforced identically in every environment; `create_app(settings: Settings \| None = None)` factory wiring in `main.py`, module-level `app = create_app()` removed; root `.env.example` added with safe placeholders, deliberately invalid via its `JWT_SECRET` sentinel; both `README.md` and `backend/README.md` updated to `uvicorn app.main:create_app --factory --reload`, with `backend/README.md` gaining a `## Configuration` section (nine-variable table, process-environment-only statement, direct and cross-platform `python -m dotenv run` launch commands) and `README.md` gaining a configuration prerequisite note; `file-structure.md` §2 documents `config.py` as the configuration source of truth; 112 unit tests (assertion-level red, then green, across three regression-fix passes adding CORS canonicalization coverage, an explicit `JWT_SECRET_SENTINEL` constant, component-presence rejection of empty userinfo/query/fragment/port, rejection of scheme-qualified wildcard CORS hosts, and rejection of a backslash in any CORS origin) covering required/default status, placeholder/marker/UTF-8-boundary rejection, CORS shape/scheme/duplicate rejection with scheme/host lowercasing and default-port stripping performed before uniqueness checks, and universal production enforcement; `ruff format --check`, `ruff check`, and `mypy app` clean; startup-command sweep confirms only the historical P1-02 row remains |
 
 ## In progress
 
@@ -61,3 +62,10 @@ Next task: P1-03
   the pinned dependency set actually closes.
 - Audit 2 F6 assignment: P4T-03 will author Staff Contract tests 17–18. Confirm the assignment when
   Phase 4B opens; do not edit the frozen backlog to reconcile its two traceability mechanisms.
+- P1-04 must regenerate and verify `backend/requirements.txt` against the actual Linux container
+  target. The P1-03 export was generated on Windows with pip-tools 7.6.1, which resolves
+  platform-conditional dependencies for the generating platform rather than preserving every target
+  platform's markers, including the `uvloop` case.
+- P1-05 should configure the `pydantic.mypy` plugin for `pydantic-settings` constructor handling and,
+  if the plugin verifies environment-backed `Settings()` construction correctly, remove P1-03's
+  targeted `# type: ignore[call-arg]`.
