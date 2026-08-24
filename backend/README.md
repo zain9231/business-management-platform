@@ -15,6 +15,11 @@ python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"     # Windows; use .venv/bin/pip on Linux/macOS
 ```
 
+`requirements.txt` is the generated Linux-container/deployment lock. It includes Linux-only
+dependencies such as `uvloop` and omits Windows-only transitive packages, so native Windows
+development must use the editable `pyproject.toml` installation above rather than
+`pip install -r requirements.txt`.
+
 ## Configuration
 
 `Settings` (`app/core/config.py`) reads process environment variables only — it does not
@@ -67,5 +72,9 @@ cp ../.env.example ../.env
 .venv/Scripts/pytest     # Windows; use .venv/bin/pytest on Linux/macOS
 ```
 
-Database configuration, Docker Compose, linting, type checking, migrations, and the full test
-harness are added in later Phase 1 tasks; see `docs/project/implementation-backlog.md`.
+For the PostgreSQL-backed container workflow, run `docker compose up --build --wait` from the
+repository root after preparing the root `.env`. See `docs/deployment/local-development.md` for logs,
+database-shell access, persistence verification, and destructive-reset safety. Linting, type checking,
+and the full database-backed test harness are added in later Phase 1 tasks. Migration configuration
+begins in P2-01; its explicit release-step mechanism remains deferred to DEP-01. See
+`docs/project/implementation-backlog.md`.
