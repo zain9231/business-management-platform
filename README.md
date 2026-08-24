@@ -72,12 +72,16 @@ Implementation proceeds in strict backlog order. Current task status is tracked 
 
 ## Local development
 
-The backend scaffold exists as of P1-02: `cd backend && python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"`, then `.venv/Scripts/uvicorn app.main:create_app --factory --reload` (Windows; use `.venv/bin/` on Linux/macOS). See `backend/README.md`.
-As of P1-03, required configuration must reach the backend process's environment before that command
-succeeds — copying `.env.example` to `.env` alone does not load it, and `JWT_SECRET` must replace the
-deliberately invalid sentinel. `backend/README.md` documents the full setting vocabulary and launch
-commands.
-Docker commands, migrations, database-backed tests, linting, and type-checking commands are added during the rest of Phase 1 and documented in full under backlog task P1-08.
+Docker Compose runs the backend and PostgreSQL. Copy `.env.example` to `.env`, replace the deliberately
+invalid `JWT_SECRET` sentinel, then run `docker compose up --build --wait` from the repository root.
+See [local development with Docker Compose](docs/deployment/local-development.md) for prerequisites,
+health checks, logs, database access, persistence verification, and safe reset instructions.
+
+Native backend development remains available through `backend/README.md`. On Windows, install from
+the editable `backend/pyproject.toml` source; `backend/requirements.txt` is the generated Linux-container
+and deployment lock and is not a Windows installation input. The database-backed test harness,
+linting, and type-checking workflows are added during the remaining Phase 1 tasks. Migration
+configuration begins in P2-01; its explicit release-step mechanism remains deferred to DEP-01.
 
 ## Phase 0 artifact verification
 

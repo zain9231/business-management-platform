@@ -22,8 +22,6 @@ cffi==2.1.1
     # via argon2-cffi-bindings
 click==8.4.2
     # via uvicorn
-colorama==0.4.6
-    # via click
 fastapi==0.141.1
     # via business-management-platform-backend (pyproject.toml)
 greenlet==3.5.5
@@ -80,10 +78,10 @@ typing-inspection==0.4.4
     #   fastapi
     #   pydantic
     #   pydantic-settings
-tzdata==2026.3
-    # via psycopg
 uvicorn[standard]==0.52.3
     # via business-management-platform-backend (pyproject.toml)
+uvloop==0.22.1
+    # via uvicorn
 watchfiles==1.2.0
     # via uvicorn
 websockets==17.0.1
