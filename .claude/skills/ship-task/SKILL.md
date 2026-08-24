@@ -47,11 +47,10 @@ Update `docs/project/progress.md` on the feature branch so the change is include
 
 Show the exact progress edit and wait for per-operation approval before applying it.
 
-The progress rule is **in the same PR**, not in the same commit. A branch name is sufficient before
-the PR exists. If the progress record must include the PR number, make a follow-up commit on the
-feature branch before merge. Do **not** tick checkboxes in
-`docs/project/implementation-backlog.md`; it is checksum-protected and stays frozen as the accepted
-plan.
+For the shared branch-before-PR and verified-number follow-up mechanics, follow
+`docs/project/git-operating-rules.md` under **Recording pull requests in progress.md**. Do **not**
+tick checkboxes in `docs/project/implementation-backlog.md`; it is checksum-protected and stays
+frozen as the accepted plan.
 
 ## 5. Commit
 
