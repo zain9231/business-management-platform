@@ -54,6 +54,18 @@ e. `git fetch --prune` — clear the stale remote-tracking ref left by step c.
 - The merge body is derived from the commit, not typed fresh. Newly codified from operating
   experience.
 
+## Recording pull requests in progress.md
+
+Every pull request for a backlog task or repository chore must add or update its own row in
+`docs/project/progress.md` in that pull request. Before the PR exists, the branch name is sufficient
+in the `Branch / PR` cell. After `gh pr create` returns and the PR is verified, add
+`(PR #<number>)` to that cell in a follow-up commit on the same branch before merge. Never predict a
+PR number.
+
+Consolidated and generalized from `.claude/skills/ship-task/SKILL.md` **Progress**. Its backlog-only
+scope left chore PRs without a route to the rule: PR #19 omitted its own row, while PR #23 restored
+that row and then recorded its own verified number in a follow-up commit.
+
 ## Body files (commit, PR, merge)
 
 Any file passed as a commit, PR, or merge body:
