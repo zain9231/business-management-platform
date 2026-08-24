@@ -52,6 +52,7 @@ Next task: P1-05
 | Reconcile canonical repository records (#22) | 2026-08-19 | `docs/issue-22-canonical-records` (PR #23) | Added five tracked-but-undocumented paths to `file-structure.md` §2 (`backend/app/api/health.py`, `docs/project/progress.md`, `docs/project/git-operating-rules.md`, the `.claude/` tree plus `CLAUDE.md`/`CLAUDE.local.md.example`, root `tests/`) with explanatory prose for entries outside the frozen Specification §14 layout; added the missing Chores row for issue #18 / PR #19 |
 | Quote branch-deletion endpoint for PowerShell (#35) | 2026-08-24 | `docs/35-quote-branch-deletion-endpoint` (PR #36) | Quoted the canonical step-c endpoint so PowerShell and Bash pass one literal API path, clarified shell-quote and `gh` placeholder semantics, and reduced duplicate command-shaped occurrences to canonical-step pointers; shell pin, guard behavior, and the five-step approval sequence remain unchanged; 41 repository-tooling tests and Phase 0 manifest 10/10 passed |
 | Move the PR-number self-row rule to Git operating rules (#24) | 2026-08-24 | `docs/24-progress-pr-number-self-row` (PR #37) | Moved the branch-before-PR and verified-number follow-up mechanics from backlog-only `ship-task` to the repository-wide Git/GitHub rules, applied them to both backlog-task and chore PRs, and left `ship-task` pointing to the canonical owner; documentation sweep, 41 repository-tooling tests, and Phase 0 manifest 10/10 passed |
+| Correct stale requirements.txt header descriptions (#32) | 2026-08-24 | `docs/32-correct-requirements-header-descriptions` (PR #38) | Replaced three stale custom-header claims with pip-compile native-header wording, assigned future CI drift enforcement to P1-07, removed the completed P1-04 future-tense lock note, preserved `backend/requirements.txt` byte-for-byte, and preserved the P1-05 `pydantic.mypy` obligation; documentation/history checks and Phase 0 manifest 10/10 passed |
 
 ## Notes
 
@@ -65,10 +66,6 @@ Next task: P1-05
   the pinned dependency set actually closes.
 - Audit 2 F6 assignment: P4T-03 will author Staff Contract tests 17–18. Confirm the assignment when
   Phase 4B opens; do not edit the frozen backlog to reconcile its two traceability mechanisms.
-- P1-04 must regenerate and verify `backend/requirements.txt` against the actual Linux container
-  target. The P1-03 export was generated on Windows with pip-tools 7.6.1, which resolves
-  platform-conditional dependencies for the generating platform rather than preserving every target
-  platform's markers, including the `uvloop` case.
 - P1-05 should configure the `pydantic.mypy` plugin for `pydantic-settings` constructor handling and,
   if the plugin verifies environment-backed `Settings()` construction correctly, remove P1-03's
   targeted `# type: ignore[call-arg]`.
