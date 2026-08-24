@@ -28,9 +28,9 @@ command was the defect that produced this file.
 
 a. `gh pr merge <number> --squash` — no `--delete-branch`.
 b. Sync local `main` (`git switch main`, `git pull --ff-only`).
-c. `gh api -X DELETE repos/{owner}/{repo}/git/refs/heads/<branch>` — delete the remote branch.
-   `{owner}` and `{repo}` are literal placeholder syntax that `gh api` substitutes from the current
-   repository; do not hand-substitute them.
+c. `gh api -X DELETE 'repos/{owner}/{repo}/git/refs/heads/<branch>'` — delete the remote branch.
+   The single quotes are shell syntax; `{owner}` and `{repo}` remain literal placeholder syntax that
+   `gh api` substitutes from the current repository. Do not hand-substitute them.
 d. `git branch -D <branch>` — delete the local branch.
 e. `git fetch --prune` — clear the stale remote-tracking ref left by step c.
 
@@ -38,7 +38,7 @@ e. `git fetch --prune` — clear the stale remote-tracking ref left by step c.
 |---|---|
 | a. Merge without `--delete-branch` | consolidated and corrected from `CLAUDE.md` **Branches and commits**, `CONTRIBUTING.md` **Protected main workflow**, `.claude/skills/ship-task/SKILL.md` **Merge**, and `.claude/hooks/guard_git.py`'s `PR_WORKFLOW` and remote-ref-deletion rule — all five previously stated the bundled `gh pr merge --squash --delete-branch`; that form is removed here |
 | b. Sync local main | consolidated from `.claude/skills/ship-task/SKILL.md` **Sync local main** and `.claude/skills/task-start/SKILL.md` **Sync main and confirm a clean working tree** |
-| c. Remote deletion via `gh api -X DELETE .../git/refs/heads/<branch>` | newly codified from operating experience — audit of `.claude/hooks/guard_git.py` found this is the only branch-deletion form that is order-independent and unconditionally unblocked. `git push origin --delete <branch>` is always blocked; `git push origin :<branch>` is blocked whenever local HEAD is `main`, which step b puts it on |
+| c. Remote deletion via the canonical step-c command | newly codified from operating experience — audit of `.claude/hooks/guard_git.py` found this is the only branch-deletion form that is order-independent and unconditionally unblocked. `git push origin --delete <branch>` is always blocked; `git push origin :<branch>` is blocked whenever local HEAD is `main`, which step b puts it on |
 | d. `git branch -D <branch>` | newly codified from operating experience — no local-branch-deletion rule existed anywhere in the repository before this file. `-d` fails because the branch tip is not an ancestor of `main` after a squash merge; `-D` is required |
 | e. `git fetch --prune` | newly codified from operating experience — four stale remote-tracking refs accumulated before they were pruned as a separate housekeeping item |
 
@@ -81,8 +81,7 @@ operating experience; no existing file states them.
 `git push origin :<branch>` only when local HEAD is `main`. It does not block
 `gh pr merge --delete-branch`, so its branch-deletion coverage remains inverted relative to the
 sequence in this file: it blocks a form nobody needs here and lets through the bundled merge form
-this file forbids. The required step-c
-`gh api -X DELETE repos/{owner}/{repo}/git/refs/heads/<branch>` form remains intentionally unblocked.
+this file forbids. The required step-c form remains intentionally unblocked.
 
 The guard separately inspects Bash command text for co-occurring `enforce_admins` and `DELETE` tokens.
 That branch-protection rule is covered by the root hook tests and does not close this branch-deletion
