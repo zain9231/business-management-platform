@@ -1,0 +1,45 @@
+minimum_pre_commit_version: "4.6.2"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: '^docs/(api/shared-api-conventions\.md|api/contracts/(authentication|customers|staff|services|bookings)-api-contract\.md|project/implementation-backlog\.md)$|^docs/architecture/erd/source/business-management-platform-erd-v1\.2\.dbml$'
+      - id: end-of-file-fixer
+        exclude: '^docs/(api/shared-api-conventions\.md|api/contracts/(authentication|customers|staff|services|bookings)-api-contract\.md|project/implementation-backlog\.md)$|^docs/architecture/erd/source/business-management-platform-erd-v1\.2\.dbml$'
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        exclude: '^docs/(api/shared-api-conventions\.md|api/contracts/(authentication|customers|staff|services|bookings)-api-contract\.md|project/implementation-backlog\.md)$|^docs/architecture/erd/source/business-management-platform-erd-v1\.2\.dbml$'
+      - id: fix-byte-order-marker
+        exclude: '^docs/(api/shared-api-conventions\.md|api/contracts/(authentication|customers|staff|services|bookings)-api-contract\.md|project/implementation-backlog\.md)$|^docs/architecture/erd/source/business-management-platform-erd-v1\.2\.dbml$'
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 65dbdb59d2f2d9c3bdc343c566821ad3319ddaa3  # v0.16.3
+    hooks:
+      - id: ruff-check
+        args: [--fix, --no-cache, --config=backend/pyproject.toml]
+        files: '^(backend/|tests/|scripts/).*\.py$'
+      - id: ruff-format
+        args: [--no-cache, --config=backend/pyproject.toml]
+        files: '^(backend/|tests/|scripts/).*\.py$'
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
+    # Neither hook scans Git history; P10-01 owns that coverage.
+    hooks:
+      # Upstream staged entry: gitleaks git --pre-commit --redact --staged --verbose; pass_filenames: false.
+      - id: gitleaks
+      - id: gitleaks
+        alias: gitleaks-dir
+        entry: gitleaks dir --redact --verbose .
+        pass_filenames: false
+        always_run: true
+        stages: [manual]
