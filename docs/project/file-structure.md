@@ -106,7 +106,10 @@ business-management-platform/
 │   └── requirements.txt
 ├── frontend/
 │   ├── .dockerignore
+│   ├── .prettierignore
+│   ├── .prettierrc.json
 │   ├── Dockerfile
+│   ├── eslint.config.mjs
 │   ├── public/
 │   ├── src/
 │   │   ├── components/
@@ -165,13 +168,15 @@ business-management-platform/
 │       ├── test-strategy.md
 │       └── contract-traceability.md
 ├── scripts/
+│   ├── quality.py
 │   ├── seed_demo_data.py
 │   └── verify_schema_parity.py
 ├── tests/
 │   └── hooks/
 │       ├── test_context_budget.py
 │       ├── test_guard_git.py
-│       └── test_hook_inventory.py
+│       ├── test_hook_inventory.py
+│       └── test_quality_tooling.py
 ├── .editorconfig
 ├── .env.example
 ├── .gitignore
@@ -191,6 +196,8 @@ Three entries above sit outside the Specification section 14 backend layout and 
 `backend/app/api/health.py` holds the liveness and readiness routes. It sits beside `v1/` rather than inside it because the Specification section 52 health endpoint is infrastructure, not a versioned API resource. `GET /health/live` is deliberately unreachable under `/api/v1`, and P1-02's test suite asserts that.
 
 `tests/` at the repository root holds tests for repository tooling — currently the `.claude/` hooks. It is separate from `backend/tests/` because those tests exercise the development harness, not the application, and must not be collected by the backend suite or counted in its coverage.
+
+P1-05 adds `tests/hooks/test_quality_tooling.py` for repository quality configuration and command wiring, and `scripts/quality.py` as the cross-platform `format`/`lint`/`typecheck` dispatcher. The three `frontend/` configuration files are lint/format placeholders only; P6-01 owns the package manifest, lockfile, dependencies, TypeScript configuration, and every executable npm command.
 
 `.claude/`, `CLAUDE.md`, and `CLAUDE.local.md.example` configure the Claude Code working environment: subagents, hooks, path-scoped rules, and skills. `.claude/settings.local.json` and `CLAUDE.local.md` are personal and git-ignored; only their `.example` counterparts are tracked. `.env.example` is at the repository root, not under `backend/`; `compose.yaml` is also at the root and reads it from there, so one file serves every service. `backend/app/core/config.py` is the executable source of truth for configuration names, types, defaults, sentinel values, and validation. The root `.env.example` is its synchronized safe operator-facing sample, and automated tests keep their exposed key sets aligned.
 

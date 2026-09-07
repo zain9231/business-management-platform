@@ -18,13 +18,14 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
 SCRIPT = Path(__file__).resolve().parents[2] / ".claude" / "hooks" / "guard_git.py"
 
 
-def run_guard(command: str, cwd: Path) -> dict | None:
+def run_guard(command: str, cwd: Path) -> dict[str, Any] | None:
     payload = json.dumps({"tool_input": {"command": command}, "cwd": str(cwd)})
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
@@ -32,11 +33,12 @@ def run_guard(command: str, cwd: Path) -> dict | None:
         capture_output=True,
         text=True,
         timeout=10,
+        check=False,
     )
     assert result.returncode == 0
     if not result.stdout:
         return None
-    return json.loads(result.stdout)
+    return cast(dict[str, Any], json.loads(result.stdout))
 
 
 def assert_denied(command: str, cwd: Path) -> None:
@@ -60,33 +62,21 @@ DELETE_SPELLINGS = {
 }
 
 MULTILINE_AND_INDIRECT_DELETE_FORMS = {
-    "target-first-continuation": (
-        f'gh api "{ENFORCE_ADMINS_URL}" \\\n  --method DELETE'
-    ),
-    "method-first-continuation": (
-        f'gh api \\\n  --method DELETE \\\n  "{ENFORCE_ADMINS_URL}"'
-    ),
+    "target-first-continuation": (f'gh api "{ENFORCE_ADMINS_URL}" \\\n  --method DELETE'),
+    "method-first-continuation": (f'gh api \\\n  --method DELETE \\\n  "{ENFORCE_ADMINS_URL}"'),
     "no-leading-whitespace": f'-XDELETE "{ENFORCE_ADMINS_URL}"',
-    "variable-indirection": (
-        f'REF="{ENFORCE_ADMINS_URL}"; gh api --method DELETE "$REF"'
-    ),
+    "variable-indirection": (f'REF="{ENFORCE_ADMINS_URL}"; gh api --method DELETE "$REF"'),
 }
 
 METHOD_INDIRECTION_DELETE_FORMS = {
-    "method-variable": (
-        f'M=DELETE; gh api --method "$M" "{ENFORCE_ADMINS_URL}"'
-    ),
-    "method-command-substitution": (
-        f'gh api --method "$(echo DELETE)" "{ENFORCE_ADMINS_URL}"'
-    ),
-    "method-backtick-substitution": (
-        f'gh api --method `echo DELETE` "{ENFORCE_ADMINS_URL}"'
-    ),
+    "method-variable": (f'M=DELETE; gh api --method "$M" "{ENFORCE_ADMINS_URL}"'),
+    "method-command-substitution": (f'gh api --method "$(echo DELETE)" "{ENFORCE_ADMINS_URL}"'),
+    "method-backtick-substitution": (f'gh api --method `echo DELETE` "{ENFORCE_ADMINS_URL}"'),
 }
 
 MENTION_DOES_NOT_EXEMPT_OTHER_MATCHERS = {
-    "force-push": 'git push --force origin main  # not an enforce_admins call',
-    "history-rewrite": 'git rebase --root  # see enforce_admins docs for the emergency case',
+    "force-push": "git push --force origin main  # not an enforce_admins call",
+    "history-rewrite": "git rebase --root  # see enforce_admins docs for the emergency case",
     "recursive-delete": "rm -rf /tmp/enforce_admins-notes",
 }
 
@@ -103,7 +93,7 @@ PRESERVED_MATCHERS = {
 
 
 @pytest.mark.parametrize("command", DELETE_SPELLINGS.values(), ids=list(DELETE_SPELLINGS))
-def test_enforce_admins_delete_spellings_stay_denied(command, tmp_path):
+def test_enforce_admins_delete_spellings_stay_denied(command: str, tmp_path: Path) -> None:
     assert_denied(command, tmp_path)
 
 
@@ -112,7 +102,9 @@ def test_enforce_admins_delete_spellings_stay_denied(command, tmp_path):
     MULTILINE_AND_INDIRECT_DELETE_FORMS.values(),
     ids=list(MULTILINE_AND_INDIRECT_DELETE_FORMS),
 )
-def test_enforce_admins_multiline_and_indirect_delete_forms_stay_denied(command, tmp_path):
+def test_enforce_admins_multiline_and_indirect_delete_forms_stay_denied(
+    command: str, tmp_path: Path
+) -> None:
     assert_denied(command, tmp_path)
 
 
@@ -121,22 +113,20 @@ def test_enforce_admins_multiline_and_indirect_delete_forms_stay_denied(command,
     METHOD_INDIRECTION_DELETE_FORMS.values(),
     ids=list(METHOD_INDIRECTION_DELETE_FORMS),
 )
-def test_enforce_admins_method_indirection_forms_are_denied(command, tmp_path):
+def test_enforce_admins_method_indirection_forms_are_denied(command: str, tmp_path: Path) -> None:
     assert_denied(command, tmp_path)
 
 
-def test_enforce_admins_method_post_restore_is_allowed(tmp_path):
+def test_enforce_admins_method_post_restore_is_allowed(tmp_path: Path) -> None:
     assert_allowed(f'gh api --method POST "{ENFORCE_ADMINS_URL}"', tmp_path)
 
 
-def test_enforce_admins_no_method_flag_is_allowed(tmp_path):
+def test_enforce_admins_no_method_flag_is_allowed(tmp_path: Path) -> None:
     assert_allowed(f'gh api "{ENFORCE_ADMINS_URL}"', tmp_path)
 
 
-def test_enforce_admins_incidental_mention_is_allowed(tmp_path):
-    assert_allowed(
-        'echo "CONTRIBUTING.md documents the enforce_admins bypass pair"', tmp_path
-    )
+def test_enforce_admins_incidental_mention_is_allowed(tmp_path: Path) -> None:
+    assert_allowed('echo "CONTRIBUTING.md documents the enforce_admins bypass pair"', tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -144,14 +134,16 @@ def test_enforce_admins_incidental_mention_is_allowed(tmp_path):
     MENTION_DOES_NOT_EXEMPT_OTHER_MATCHERS.values(),
     ids=list(MENTION_DOES_NOT_EXEMPT_OTHER_MATCHERS),
 )
-def test_enforce_admins_mention_does_not_exempt_other_matchers(command, tmp_path):
+def test_enforce_admins_mention_does_not_exempt_other_matchers(
+    command: str, tmp_path: Path
+) -> None:
     assert_denied(command, tmp_path)
 
 
 @pytest.mark.parametrize("command", PRESERVED_MATCHERS.values(), ids=list(PRESERVED_MATCHERS))
-def test_other_matchers_remain_effective(command, tmp_path):
+def test_other_matchers_remain_effective(command: str, tmp_path: Path) -> None:
     assert_denied(command, tmp_path)
 
 
-def test_ordinary_command_produces_no_denial(tmp_path):
+def test_ordinary_command_produces_no_denial(tmp_path: Path) -> None:
     assert_allowed("git status", tmp_path)

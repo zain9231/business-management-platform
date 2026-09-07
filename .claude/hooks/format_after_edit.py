@@ -7,6 +7,7 @@ hook is harmless before Phase 1 (P1-05) sets Ruff up and before P6-01 sets the f
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
@@ -17,6 +18,7 @@ from pathlib import PurePosixPath
 TIMEOUT = 45
 
 SKIP_PREFIXES = ("docs/",)  # checksum-protected artifacts must never be reformatted
+PYTHON_PREFIXES = ("backend/", "tests/", "scripts/")
 
 
 def rel_posix(raw: str, root: str) -> str | None:
@@ -58,11 +60,41 @@ def main() -> None:
 
     messages: list[str] = []
 
-    if rel.endswith(".py") and shutil.which("ruff"):
-        run(["ruff", "format", raw], cwd=root)
-        problem = run(["ruff", "check", "--fix", raw], cwd=root)
+    if (
+        rel.startswith(PYTHON_PREFIXES)
+        and rel.endswith(".py")
+        and importlib.util.find_spec("ruff") is not None
+    ):
+        problem = run(
+            [
+                sys.executable,
+                "-m",
+                "ruff",
+                "check",
+                "--fix",
+                "--no-cache",
+                "--config=backend/pyproject.toml",
+                raw,
+            ],
+            cwd=root,
+        )
         if problem:
-            messages.append(f"ruff check found issues it could not fix in {rel}:\n{problem}")
+            messages.append(f"ruff check --fix failed for {rel}:\n{problem}")
+
+        problem = run(
+            [
+                sys.executable,
+                "-m",
+                "ruff",
+                "format",
+                "--no-cache",
+                "--config=backend/pyproject.toml",
+                raw,
+            ],
+            cwd=root,
+        )
+        if problem:
+            messages.append(f"ruff format failed for {rel}:\n{problem}")
 
     elif rel.startswith("frontend/") and rel.endswith((".ts", ".tsx", ".css", ".json")):
         frontend = os.path.join(root, "frontend")

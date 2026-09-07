@@ -40,7 +40,13 @@ def write_transcript(path: Path, lines: list[str]) -> Path:
     return path
 
 
-def run_hook(cwd: Path, session_id: str, transcript_path, args=None, raw_stdin=None):
+def run_hook(
+    cwd: Path,
+    session_id: str,
+    transcript_path: Path | None,
+    args: list[str] | None = None,
+    raw_stdin: str | None = None,
+) -> subprocess.CompletedProcess[str]:
     payload = {
         "session_id": session_id,
         "cwd": str(cwd),
@@ -53,6 +59,7 @@ def run_hook(cwd: Path, session_id: str, transcript_path, args=None, raw_stdin=N
         capture_output=True,
         text=True,
         timeout=10,
+        check=False,
     )
 
 
@@ -60,14 +67,14 @@ def state_file(cwd: Path, session_id: str) -> Path:
     return cwd / ".claude" / ".cache" / "context-budget" / f"{session_id}.json"
 
 
-def test_case_01_below_threshold_produces_no_output(tmp_path):
+def test_case_01_below_threshold_produces_no_output(tmp_path: Path) -> None:
     transcript = write_transcript(tmp_path / "t.jsonl", [usage_entry(50_000)])
     result = run_hook(tmp_path, "case01", transcript)
     assert result.returncode == 0
     assert result.stdout == ""
 
 
-def test_case_02_crossing_threshold_1_prints_notice_once(tmp_path):
+def test_case_02_crossing_threshold_1_prints_notice_once(tmp_path: Path) -> None:
     transcript = write_transcript(tmp_path / "t.jsonl", [usage_entry(200_000)])
     result = run_hook(tmp_path, "case02", transcript)
     assert result.returncode == 0
@@ -76,7 +83,7 @@ def test_case_02_crossing_threshold_1_prints_notice_once(tmp_path):
     assert "200,000" in result.stdout
 
 
-def test_case_03_same_usage_on_later_prompt_prints_nothing(tmp_path):
+def test_case_03_same_usage_on_later_prompt_prints_nothing(tmp_path: Path) -> None:
     transcript = write_transcript(tmp_path / "t.jsonl", [usage_entry(200_000)])
     first = run_hook(tmp_path, "case03", transcript)
     second = run_hook(tmp_path, "case03", transcript)
@@ -85,7 +92,7 @@ def test_case_03_same_usage_on_later_prompt_prints_nothing(tmp_path):
     assert second.stdout == ""
 
 
-def test_case_04_crossing_threshold_2_prints_threshold_2_notice(tmp_path):
+def test_case_04_crossing_threshold_2_prints_threshold_2_notice(tmp_path: Path) -> None:
     t1 = write_transcript(tmp_path / "t1.jsonl", [usage_entry(200_000)])
     t2 = write_transcript(tmp_path / "t2.jsonl", [usage_entry(350_000)])
     run_hook(tmp_path, "case04", t1)
@@ -96,7 +103,7 @@ def test_case_04_crossing_threshold_2_prints_threshold_2_notice(tmp_path):
     assert "350,000" in second.stdout
 
 
-def test_case_05_same_usage_at_threshold_2_on_later_prompt_prints_nothing(tmp_path):
+def test_case_05_same_usage_at_threshold_2_on_later_prompt_prints_nothing(tmp_path: Path) -> None:
     t1 = write_transcript(tmp_path / "t1.jsonl", [usage_entry(200_000)])
     t2 = write_transcript(tmp_path / "t2.jsonl", [usage_entry(350_000)])
     run_hook(tmp_path, "case05", t1)
@@ -106,7 +113,7 @@ def test_case_05_same_usage_at_threshold_2_on_later_prompt_prints_nothing(tmp_pa
     assert third.stdout == ""
 
 
-def test_case_06_first_measurement_above_threshold_2_fires_only_threshold_2(tmp_path):
+def test_case_06_first_measurement_above_threshold_2_fires_only_threshold_2(tmp_path: Path) -> None:
     transcript = write_transcript(tmp_path / "t.jsonl", [usage_entry(500_000)])
     result = run_hook(tmp_path, "case06", transcript)
     assert result.returncode == 0
@@ -115,7 +122,7 @@ def test_case_06_first_measurement_above_threshold_2_fires_only_threshold_2(tmp_
     assert "150K" not in result.stdout
 
 
-def test_case_07_lower_measurement_after_threshold_2_fired_prints_nothing(tmp_path):
+def test_case_07_lower_measurement_after_threshold_2_fired_prints_nothing(tmp_path: Path) -> None:
     high = write_transcript(tmp_path / "high.jsonl", [usage_entry(500_000)])
     low = write_transcript(tmp_path / "low.jsonl", [usage_entry(80_000)])
     run_hook(tmp_path, "case07", high)
@@ -124,7 +131,7 @@ def test_case_07_lower_measurement_after_threshold_2_fired_prints_nothing(tmp_pa
     assert second.stdout == ""
 
 
-def test_case_08_sidechain_last_entry_measures_main_thread_entry_instead(tmp_path):
+def test_case_08_sidechain_last_entry_measures_main_thread_entry_instead(tmp_path: Path) -> None:
     transcript = write_transcript(
         tmp_path / "t.jsonl",
         [usage_entry(200_000, is_sidechain=False), usage_entry(900_000, is_sidechain=True)],
@@ -136,7 +143,7 @@ def test_case_08_sidechain_last_entry_measures_main_thread_entry_instead(tmp_pat
     assert "150K" in result.stdout
 
 
-def test_case_09_no_usage_block_produces_no_output(tmp_path):
+def test_case_09_no_usage_block_produces_no_output(tmp_path: Path) -> None:
     transcript = write_transcript(
         tmp_path / "t.jsonl",
         [json.dumps({"type": "user", "message": {"content": "hello"}})],
@@ -146,37 +153,39 @@ def test_case_09_no_usage_block_produces_no_output(tmp_path):
     assert result.stdout == ""
 
 
-def test_case_10_nonexistent_transcript_path_produces_no_output(tmp_path):
+def test_case_10_nonexistent_transcript_path_produces_no_output(tmp_path: Path) -> None:
     result = run_hook(tmp_path, "case10", tmp_path / "does-not-exist.jsonl")
     assert result.returncode == 0
     assert result.stdout == ""
 
 
-def test_case_11_malformed_json_on_stdin_produces_no_output():
+def test_case_11_malformed_json_on_stdin_produces_no_output() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
         input="{not valid json",
         capture_output=True,
         text=True,
         timeout=10,
+        check=False,
     )
     assert result.returncode == 0
     assert result.stdout == ""
 
 
-def test_case_12_empty_stdin_produces_no_output():
+def test_case_12_empty_stdin_produces_no_output() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT)],
         input="",
         capture_output=True,
         text=True,
         timeout=10,
+        check=False,
     )
     assert result.returncode == 0
     assert result.stdout == ""
 
 
-def test_case_13_reset_clears_state_and_threshold_fires_again(tmp_path):
+def test_case_13_reset_clears_state_and_threshold_fires_again(tmp_path: Path) -> None:
     transcript = write_transcript(tmp_path / "t.jsonl", [usage_entry(200_000)])
 
     first = run_hook(tmp_path, "case13", transcript)

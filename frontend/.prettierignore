@@ -1,0 +1,7 @@
+# P6-01 owns executable frontend tooling and may refine these generated paths.
+node_modules/
+dist/
+coverage/
+.vite/
+playwright-report/
+test-results/

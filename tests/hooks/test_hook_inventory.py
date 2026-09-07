@@ -1,9 +1,10 @@
-"""Tests for .claude/README.md's hooks inventory against .claude/settings.json.
+"""Repository-tooling inventory contracts.
 
-Two independent functions, no shared aborting fixture: a mismatch in the table
-must not prevent the prose-count defect from being demonstrated on its own, and
-a mismatch in the prose count must not prevent the table defect from being
-demonstrated on its own.
+The hook tests compare .claude/README.md with .claude/settings.json. They remain
+independent so either mismatch is demonstrated even if the other assertion
+fails. The hierarchy test reads only the rendered target tree in
+docs/project/file-structure.md and proves P1-05's new tooling paths are admitted
+before those files are created.
 """
 
 from __future__ import annotations
@@ -15,12 +16,19 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SETTINGS = REPO_ROOT / ".claude" / "settings.json"
 README = REPO_ROOT / ".claude" / "README.md"
+FILE_STRUCTURE = REPO_ROOT / "docs" / "project" / "file-structure.md"
 
 COMMAND_SCRIPT_RE = re.compile(r'([A-Za-z0-9_]+\.py)"?\s*(.*)$')
 HOOKS_HEADING_RE = re.compile(r"^## Hooks\s*$", re.MULTILINE)
 NEXT_HEADING_RE = re.compile(r"^## ", re.MULTILINE)
 BACKTICK_RE = re.compile(r"`([^`]+)`")
 PROSE_COUNT_RE = re.compile(r"in the (\w+) `command` entries")
+CANONICAL_TREE_RE = re.compile(
+    r"^## 2\. Canonical repository hierarchy\s*$\n\n"
+    r"```text\n(?P<tree>.*?)\n```$",
+    re.MULTILINE | re.DOTALL,
+)
+TREE_ENTRY_RE = re.compile(r"^(?P<indent>(?:│   |    )*)(?:├── |└── )(?P<name>.+)$")
 NUMBER_WORDS = {
     "one": 1,
     "two": 2,
@@ -42,7 +50,7 @@ def _normalize_command(raw_command: str) -> str:
     return f"{script} {trailing.strip()}".strip()
 
 
-def _settings_hooks() -> list[dict]:
+def _settings_hooks() -> list[dict[str, object]]:
     data = json.loads(SETTINGS.read_text(encoding="utf-8"))
     return [
         hook
@@ -92,11 +100,36 @@ def _readme_hook_rows() -> list[tuple[str, str]]:
     return rows
 
 
-def test_readme_hooks_table_matches_settings_inventory():
+def _canonical_tree_paths() -> set[str]:
+    text = FILE_STRUCTURE.read_text(encoding="utf-8")
+    tree_match = CANONICAL_TREE_RE.search(text)
+    assert tree_match, "could not find canonical hierarchy tree in 'file-structure.md'"
+
+    paths: set[str] = set()
+    parents: list[str] = []
+    for line in tree_match.group("tree").splitlines():
+        entry = TREE_ENTRY_RE.match(line)
+        if not entry:
+            continue
+        indent = entry.group("indent")
+        depth = len(indent) // 4
+        assert depth <= len(parents), f"invalid canonical hierarchy indentation: {line!r}"
+
+        raw_name = entry.group("name")
+        name = raw_name.removesuffix("/")
+        parents = parents[:depth]
+        paths.add("/".join([*parents, name]))
+        if raw_name.endswith("/"):
+            parents.append(name)
+
+    return paths
+
+
+def test_readme_hooks_table_matches_settings_inventory() -> None:
     assert sorted(_readme_hook_rows()) == sorted(_settings_rows())
 
 
-def test_readme_prose_command_count_matches_settings():
+def test_readme_prose_command_count_matches_settings() -> None:
     text = README.read_text(encoding="utf-8")
     match = PROSE_COUNT_RE.search(text)
     assert match, "could not find the Linux/WSL command-count sentence in '.claude/README.md'"
@@ -104,3 +137,15 @@ def test_readme_prose_command_count_matches_settings():
     stated = int(word) if word.isdigit() else NUMBER_WORDS.get(word)
     assert stated is not None, f"unrecognized count word: {word!r}"
     assert stated == len(_settings_hooks())
+
+
+def test_canonical_hierarchy_admits_p1_05_quality_paths() -> None:
+    required = {
+        "frontend/.prettierignore",
+        "frontend/.prettierrc.json",
+        "frontend/eslint.config.mjs",
+        "scripts/quality.py",
+        "tests/hooks/test_quality_tooling.py",
+    }
+    missing = required - _canonical_tree_paths()
+    assert not missing, f"canonical hierarchy is missing P1-05 paths: {sorted(missing)}"
