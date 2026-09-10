@@ -20,6 +20,10 @@ dependencies such as `uvloop` and omits Windows-only transitive packages, so nat
 development must use the editable `pyproject.toml` installation above rather than
 `pip install -r requirements.txt`.
 
+Activate this environment before running the repository-root quality and Git-hook setup commands
+in [the main README](../README.md#quality-checks): `.venv\Scripts\Activate.ps1` in PowerShell or
+`source .venv/bin/activate` on Linux/macOS. Git Bash on Windows uses `source .venv/Scripts/activate`.
+
 ## Configuration
 
 `Settings` (`app/core/config.py`) reads process environment variables only — it does not
@@ -80,7 +84,7 @@ cp ../.env.example ../.env
 
 For the PostgreSQL-backed container workflow, run `docker compose up --build --wait` from the
 repository root after preparing the root `.env`. See `docs/deployment/local-development.md` for logs,
-database-shell access, persistence verification, and destructive-reset safety. Linting, type checking,
-and the full database-backed test harness are added in later Phase 1 tasks. Migration configuration
-begins in P2-01; its explicit release-step mechanism remains deferred to DEP-01. See
-`docs/project/implementation-backlog.md`.
+database-shell access, persistence verification, and destructive-reset safety. Python formatting,
+linting, type checking, and Git hooks are available through [the main README](../README.md#quality-checks).
+The full database-backed test harness belongs to P1-06. Migration configuration begins in P2-01;
+its explicit release-step mechanism remains deferred to DEP-01.
