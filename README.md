@@ -4,7 +4,7 @@ A contract-first, multi-tenant management platform for appointment-based and ser
 
 The project is being developed as a modular monolith using FastAPI, PostgreSQL, React, and TypeScript. Its first working profile will represent a salon, followed by a repair-shop reskin to demonstrate how one core platform can support different service-business terminology and workflows.
 
-> **Current status:** Phase 0 is complete. Phase 1 repository and development-environment setup is beginning.
+> **Current status:** Phase 0 is complete. The backend scaffold, typed configuration, Docker environment, and Python quality tooling are implemented. See [implementation progress](docs/project/progress.md) for current task status.
 
 ## Problem and scope
 
@@ -40,7 +40,8 @@ These features are planned and contractually specified but are not all implement
 | CI | GitHub Actions |
 | Architecture | Multi-tenant modular monolith |
 
-Every authenticated request loads the user's current business, role, and active status from PostgreSQL. Authorization does not rely on stale role or tenant claims embedded in access tokens.
+The authentication design requires every protected request to load the user's current business,
+role, and active status from PostgreSQL. Its implementation belongs to Phase 3.
 
 ## Project status
 
@@ -79,9 +80,39 @@ health checks, logs, database access, persistence verification, and safe reset i
 
 Native backend development remains available through `backend/README.md`. On Windows, install from
 the editable `backend/pyproject.toml` source; `backend/requirements.txt` is the generated Linux-container
-and deployment lock and is not a Windows installation input. The database-backed test harness,
-linting, and type-checking workflows are added during the remaining Phase 1 tasks. Migration
-configuration begins in P2-01; its explicit release-step mechanism remains deferred to DEP-01.
+and deployment lock and is not a Windows installation input. The database-backed test harness is
+planned for P1-06 and CI for P1-07. Migration configuration begins in P2-01; its explicit release-step
+mechanism remains deferred to DEP-01.
+
+## Quality checks
+
+After installing the backend development dependencies, activate the backend virtual environment.
+From the repository root:
+
+```bash
+python scripts/quality.py format
+python scripts/quality.py lint
+python scripts/quality.py typecheck
+python -m pytest -c backend/pyproject.toml backend/tests
+python -m pytest tests/hooks
+```
+
+`format` applies Ruff fixes; `lint` checks formatting and lint without changing files. Type checking
+uses strict mypy. The two pytest commands collect the backend and repository-tooling suites
+separately. Frontend executable checks begin in P6-01.
+
+Install the Git hooks once in every clone, from the repository root with that environment active:
+
+```bash
+python -m pre_commit install --install-hooks
+python -m pre_commit run --all-files
+```
+
+The first command downloads the pinned hook environments and installs `.git/hooks/pre-commit`.
+The configuration file alone does not activate commit checks. Hooks can modify unprotected files;
+review their changes before staging. Gitleaks scans the staged changes at commit time. The separate
+manual `gitleaks-dir` hook scans the working directory; `--all-files` does not turn the staged scanner
+into a working-directory or history scan.
 
 ## Phase 0 artifact verification
 

@@ -93,8 +93,8 @@ health check on the configuration.
 ## Not configured here, on purpose
 
 No `Stop` hook gating on the test suite — it is genuinely useful for unattended runs but noisy while
-iterating, and the backend suite does not exist yet. A ready-to-paste block is in
-`settings.local.json.example`, to enable from Phase 2 onward.
+iterating. The backend unit suite exists; the database harness is planned for P1-06. A ready-to-paste
+block is in `settings.local.json.example`, to enable from Phase 2 onward.
 
 No MCP servers. Claude Code reaches GitHub through the `gh` CLI, which is more context-efficient than
 an MCP equivalent. Add a Postgres MCP server later only if schema inspection during Phase 5 debugging

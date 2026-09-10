@@ -9,6 +9,7 @@ before those files are created.
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -149,3 +150,77 @@ def test_canonical_hierarchy_admits_p1_05_quality_paths() -> None:
     }
     missing = required - _canonical_tree_paths()
     assert not missing, f"canonical hierarchy is missing P1-05 paths: {sorted(missing)}"
+
+
+def test_application_settings_construction_is_confined_to_configuration_module() -> None:
+    allowed = REPO_ROOT / "backend" / "app" / "core" / "config.py"
+    violations: list[str] = []
+    for directory, children, files in REPO_ROOT.walk():
+        children[:] = [
+            name
+            for name in children
+            if not name.startswith(".")
+            and name
+            not in {
+                "tests",
+                "tmp",
+                "temp",
+                "node_modules",
+                "venv",
+                "env",
+                "build",
+                "dist",
+                "__pycache__",
+            }
+        ]
+        for filename in files:
+            path = directory / filename
+            if path.suffix != ".py" or path == allowed:
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            names = {"Settings"}
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom):
+                    names.update(
+                        alias.asname or alias.name
+                        for alias in node.names
+                        if alias.name == "Settings"
+                    )
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                function = node.func
+                if (
+                    isinstance(function, ast.Name)
+                    and function.id in names
+                    or isinstance(function, ast.Attribute)
+                    and function.attr == "Settings"
+                ):
+                    violations.append(f"{path.relative_to(REPO_ROOT)}:{node.lineno}")
+    assert not violations, f"Use load_settings() instead of direct construction: {violations}"
+
+
+def test_configuration_value_error_messages_are_string_literals() -> None:
+    path = REPO_ROOT / "backend" / "app" / "core" / "config.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "ValueError"
+    ]
+    assert calls, "Expected configuration validators raising ValueError"
+    violations = [
+        call.lineno
+        for call in calls
+        if not (
+            len(call.args) == 1
+            and not call.keywords
+            and isinstance(call.args[0], ast.Constant)
+            and isinstance(call.args[0].value, str)
+        )
+    ]
+    assert not violations, (
+        f"Configuration ValueError messages must be string literals: {violations}"
+    )

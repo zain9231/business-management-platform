@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 
 from app.api.health import router as health_router
-from app.core.config import Settings
+from app.core.config import Settings, load_settings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    resolved_settings = settings or Settings()
+    resolved_settings = settings if settings is not None else load_settings()
 
     app = FastAPI(title="Business Management Platform API", version="0.1.0")
     app.state.settings = resolved_settings

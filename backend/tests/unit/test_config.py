@@ -1,7 +1,11 @@
+import json
+import traceback
+
 import pytest
 from pydantic import SecretStr, ValidationError
 from pydantic_settings import SettingsError
 
+from app.core import config
 from app.core.config import JWT_SECRET_SENTINEL, Settings
 
 REQUIRED_NO_DEFAULT_VARS = [
@@ -511,3 +515,91 @@ def test_production_configuration_accepts_fully_valid_settings(
     settings = Settings()
 
     assert settings.environment == "production"
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "secret"),
+    [
+        ("JWT_SECRET", "audit-short-secret", "audit-short-secret"),
+        ("DATABASE_URL", "mysql://audit:audit-db-secret@localhost/db", "audit-db-secret"),
+        (
+            "DATABASE_URL",
+            "postgresql+psycopg://audit:password@localhost:audit-port-secret/db",
+            "audit-port-secret",
+        ),
+        (
+            "CORS_ALLOWED_ORIGINS",
+            '["https://audit:audit-cors-secret@example.com"]',
+            "audit-cors-secret",
+        ),
+        ("CORS_ALLOWED_ORIGINS", '["https://[audit-host-secret]"]', "audit-host-secret"),
+        (
+            "CORS_ALLOWED_ORIGINS",
+            '["https://example.com/audit-path-secret"]',
+            "audit-path-secret",
+        ),
+        (
+            "CORS_ALLOWED_ORIGINS",
+            '["https://x.test", LEAKCANARY-9d4f2a',
+            "LEAKCANARY-9d4f2a",
+        ),
+        ("JWT_ISSUER", None, "audit-db-secret"),
+    ],
+)
+def test_load_settings_diagnostics_are_confidential(
+    monkeypatch: pytest.MonkeyPatch, name: str, value: str | None, secret: str
+) -> None:
+    if value is None:
+        monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://a:audit-db-secret@localhost/db")
+        monkeypatch.delenv(name)
+    else:
+        monkeypatch.setenv(name, value)
+
+    with pytest.raises(ValueError) as raised:
+        config.load_settings()
+
+    error = raised.value
+    assert isinstance(error, config.ConfigurationError)
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    issues = error.errors()
+    assert issues
+    assert all(set(issue) == {"loc", "msg"} for issue in issues)
+    if secret != "LEAKCANARY-9d4f2a":
+        assert issues[0]["loc"] == (name.lower(),)
+    else:
+        assert issues[0]["loc"] == ()
+    assert json.loads(error.json()) == json.loads(json.dumps(issues))
+    for diagnostic in (
+        str(error),
+        repr(error),
+        "".join(traceback.format_exception(error)),
+        str(issues),
+        error.json(),
+        repr(error.args),
+        repr(vars(error)),
+    ):
+        assert secret not in diagnostic
+        assert VALID_SECRET not in diagnostic
+
+
+def test_direct_settings_construction_is_not_confidential_by_design(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    canary = "short-LEAKCANARY-9d4f2a"
+    monkeypatch.setenv("JWT_SECRET", canary)
+
+    with pytest.raises(ValidationError) as raised:
+        Settings()
+
+    assert canary not in str(raised.value)
+    assert raised.value.errors(include_url=False)[0]["input"] == canary
+    assert canary in raised.value.json()
+
+
+def test_load_settings_returns_valid_settings() -> None:
+    settings = config.load_settings()
+
+    assert isinstance(settings, Settings)
+    assert settings.environment == "test"
+    assert settings.jwt_secret.get_secret_value() == VALID_SECRET

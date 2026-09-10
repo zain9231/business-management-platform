@@ -43,17 +43,21 @@ Keep commits atomic: one coherent change and its required tests or documentation
 - Update setup instructions, limitations, architectural notes, and backlog status when the change affects them.
 - Keep secrets, local environment files, generated output, stale downloads, and numbered duplicate artifacts out of Git.
 
-Tool-specific commands will be added to the README as the backend, frontend, Docker, and CI scaffolds are implemented.
+Install the Git hooks in every clone and run the commands in
+[the README's quality checks](README.md#quality-checks). The checked-in hook configuration alone
+does not activate commit-time checks. Frontend and CI commands arrive in their owning backlog tasks.
 
 ## Protected Phase 0 baseline
 
 The Phase 0 checksum manifest protects the accepted specification, implementation backlog, shared API conventions, five finalized API contracts, authoritative DBML, and ERD PDF.
 
-Do not run automatic whitespace or end-of-file fixes over those manifest-backed files. When P1-05 introduces `.pre-commit-config.yaml`, its formatting hooks must exclude exactly the seven protected Markdown files with:
+Do not run automatic whitespace or end-of-file fixes over those manifest-backed files.
+The formatting hooks in `.pre-commit-config.yaml` exclude the seven protected Markdown files with:
 
 `^docs/(api/shared-api-conventions\.md|api/contracts/(authentication|customers|staff|services|bookings)-api-contract\.md|project/implementation-backlog\.md)$`
 
-Configure `check-added-large-files` with `--maxkb=2048` so the accepted 1,024,807-byte ERD PDF is allowed while unexpectedly large additions remain blocked.
+They also exclude the manifest-backed DBML source. `check-added-large-files` uses `--maxkb=2048`
+so the accepted 1,024,807-byte ERD PDF is allowed while unexpectedly large additions remain blocked.
 
 After introducing or changing formatting, line-ending, or pre-commit tooling, verify the Phase 0 manifest again from a clean checkout.
 
