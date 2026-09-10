@@ -184,7 +184,9 @@ def load_settings() -> Settings:
 
     Direct construction retains inputs in structured Pydantic errors; see
     test_direct_settings_construction_is_not_confidential_by_design. Validators
-    must keep their messages free of input values. Source parsing failures use
+    must keep their messages free of input values: msg preserves ValueError text.
+    test_configuration_value_error_messages_are_string_literals enforces literal
+    ValueError messages in this module. Source parsing failures use
     a fixed message because SettingsError has no structured safe diagnostics.
     """
     try:

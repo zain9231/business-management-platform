@@ -30,7 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| Configuration diagnostic confidentiality and audit documentation reconciliation | 2026-09-10 | `codex/fix-audit-readiness` (PR #41) | 125 backend and 56 tooling tests, Ruff, mypy, hooks, and manifest 10/10 pass; review and merge pending; P1-06 unstarted |
+| Configuration diagnostic confidentiality and audit documentation reconciliation | 2026-09-10 | `codex/fix-audit-readiness` (PR #41) | 125 backend and 57 tooling tests, Ruff, mypy, hooks, and manifest 10/10 pass; review and merge pending; P1-06 unstarted |
 
 ## Deferred or reopened
 

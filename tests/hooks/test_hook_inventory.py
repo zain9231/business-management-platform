@@ -198,3 +198,29 @@ def test_application_settings_construction_is_confined_to_configuration_module()
                 ):
                     violations.append(f"{path.relative_to(REPO_ROOT)}:{node.lineno}")
     assert not violations, f"Use load_settings() instead of direct construction: {violations}"
+
+
+def test_configuration_value_error_messages_are_string_literals() -> None:
+    path = REPO_ROOT / "backend" / "app" / "core" / "config.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "ValueError"
+    ]
+    assert calls, "Expected configuration validators raising ValueError"
+    violations = [
+        call.lineno
+        for call in calls
+        if not (
+            len(call.args) == 1
+            and not call.keywords
+            and isinstance(call.args[0], ast.Constant)
+            and isinstance(call.args[0].value, str)
+        )
+    ]
+    assert not violations, (
+        f"Configuration ValueError messages must be string literals: {violations}"
+    )
