@@ -30,7 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| — | — | — | — |
+| Configuration diagnostic confidentiality | 2026-09-10 | `codex/fix-audit-readiness` | Review and merge pending; P1-06 remains unstarted |
 
 ## Deferred or reopened
 

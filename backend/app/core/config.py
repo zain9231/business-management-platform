@@ -1,7 +1,9 @@
+import json
+from typing import TypedDict
 from urllib.parse import urlsplit
 
 from pydantic import AnyUrl, SecretStr, TypeAdapter, ValidationError, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
@@ -27,7 +29,32 @@ DEFAULT_PORTS = {"http": 80, "https": 443}
 _origin_adapter: TypeAdapter[AnyUrl] = TypeAdapter(AnyUrl)
 
 
+class ConfigurationIssue(TypedDict):
+    loc: tuple[str | int, ...]
+    msg: str
+
+
+class ConfigurationError(ValueError):
+    """Configuration diagnostics containing only field locations and safe reasons."""
+
+    def __init__(self, issues: list[ConfigurationIssue]) -> None:
+        self._issues = tuple((issue["loc"], issue["msg"]) for issue in issues)
+        details = "; ".join(
+            f"{'.'.join(map(str, loc)) or 'settings'}: {msg}" for loc, msg in self._issues
+        )
+        super().__init__(f"Invalid configuration: {details}")
+
+    def errors(self) -> list[ConfigurationIssue]:
+        return [{"loc": loc, "msg": msg} for loc, msg in self._issues]
+
+    def json(self) -> str:
+        return json.dumps(self.errors())
+
+
 class Settings(BaseSettings):
+    # SecretStr alone does not redact the raw input attached to validation errors.
+    model_config = SettingsConfigDict(hide_input_in_errors=True)
+
     database_url: str
     jwt_secret: SecretStr
     jwt_issuer: str
@@ -43,7 +70,7 @@ class Settings(BaseSettings):
     def _validate_database_url(cls, value: str) -> str:
         try:
             url = make_url(value)
-        except ArgumentError as exc:
+        except (ArgumentError, ValueError) as exc:
             raise ValueError("DATABASE_URL must be a valid SQLAlchemy URL") from exc
         if url.drivername != "postgresql+psycopg":
             raise ValueError("DATABASE_URL must use the postgresql+psycopg driver")
@@ -88,38 +115,37 @@ class Settings(BaseSettings):
         if origin == "*":
             raise ValueError("CORS_ALLOWED_ORIGINS must not contain a wildcard origin")
         if "\\" in origin:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain a backslash")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain a backslash")
 
-        parts = urlsplit(origin)
+        try:
+            parts = urlsplit(origin)
+        except ValueError as exc:
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must be valid URLs") from exc
 
         if parts.path:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain a path")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain a path")
         if parts.username is not None or parts.password is not None:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain userinfo")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain userinfo")
         # urlsplit normalizes both "no query"/"no fragment" and "present but empty" to "",
         # so component presence is checked on the raw string rather than parts.query/fragment.
         if "?" in origin:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain a query")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain a query")
         if "#" in origin:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain a fragment")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain a fragment")
         if parts.netloc.endswith(":"):
-            raise ValueError(
-                f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain an empty port"
-            )
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain an empty port")
 
         try:
             parsed = _origin_adapter.validate_python(origin)
         except ValidationError as exc:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} is not a valid URL") from exc
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must be valid URLs") from exc
 
         if parsed.scheme not in ("http", "https"):
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must use http or https")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must use http or https")
         if not parsed.host:
-            raise ValueError(f"CORS_ALLOWED_ORIGINS origin {origin!r} must have a hostname")
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must have a hostname")
         if "*" in parsed.host:
-            raise ValueError(
-                f"CORS_ALLOWED_ORIGINS origin {origin!r} must not contain a wildcard host"
-            )
+            raise ValueError("CORS_ALLOWED_ORIGINS origins must not contain a wildcard host")
 
         port = parsed.port
         if port == DEFAULT_PORTS.get(parsed.scheme):
@@ -151,3 +177,25 @@ class Settings(BaseSettings):
         if value <= 0:
             raise ValueError("must be a positive integer")
         return value
+
+
+def load_settings() -> Settings:
+    """Construct application settings through the confidential diagnostic boundary.
+
+    Direct construction retains inputs in structured Pydantic errors; see
+    test_direct_settings_construction_is_not_confidential_by_design. Validators
+    must keep their messages free of input values. Source parsing failures use
+    a fixed message because SettingsError has no structured safe diagnostics.
+    """
+    try:
+        return Settings()
+    except ValidationError as exc:
+        issues: list[ConfigurationIssue] = [
+            {"loc": error["loc"], "msg": error["msg"]}
+            for error in exc.errors(include_url=False, include_input=False, include_context=False)
+        ]
+    except SettingsError:
+        issues = [{"loc": (), "msg": "Unable to parse configuration from environment variables"}]
+
+    # Outside the handlers so the original exception is not retained as context.
+    raise ConfigurationError(issues) from None

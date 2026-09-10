@@ -25,6 +25,12 @@ development must use the editable `pyproject.toml` installation above rather tha
 `Settings` (`app/core/config.py`) reads process environment variables only — it does not
 automatically load `.env`. Populate every required variable before starting the backend.
 
+Use `load_settings()` to construct application settings. It converts validation and source-parsing
+failures into `ConfigurationError`, whose text, `errors()`, and `json()` contain only safe locations
+and reasons, with no original exception chain. Direct `Settings()` construction is reserved for the
+configuration module and tests: its structured Pydantic errors still contain raw input. Keep validator
+messages free of input values, and never log settings objects.
+
 | Variable | Required / default | Accepted values |
 |---|---|---|
 | `DATABASE_URL` | required | `postgresql+psycopg://` connection URL |
