@@ -30,7 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| Configuration diagnostic confidentiality and audit documentation reconciliation | 2026-09-10 | `codex/fix-audit-readiness` (PR #41) | 125 backend and 57 tooling tests, Ruff, mypy, hooks, and manifest 10/10 pass; review and merge pending; P1-06 unstarted |
+| Record PR #41 completion | 2026-09-10 | `codex/docs-pr41-merge-status` | Documentation review pending; P1-06 remains stopped pending planning and explicit start authorization |
 
 ## Deferred or reopened
 
@@ -58,6 +58,7 @@ Next task: P1-06
 | Quote branch-deletion endpoint for PowerShell (#35) | 2026-08-24 | `docs/35-quote-branch-deletion-endpoint` (PR #36) | Quoted the canonical step-c endpoint so PowerShell and Bash pass one literal API path, clarified shell-quote and `gh` placeholder semantics, and reduced duplicate command-shaped occurrences to canonical-step pointers; shell pin, guard behavior, and the five-step approval sequence remain unchanged; 41 repository-tooling tests and Phase 0 manifest 10/10 passed |
 | Move the PR-number self-row rule to Git operating rules (#24) | 2026-08-24 | `docs/24-progress-pr-number-self-row` (PR #37) | Moved the branch-before-PR and verified-number follow-up mechanics from backlog-only `ship-task` to the repository-wide Git/GitHub rules, applied them to both backlog-task and chore PRs, and left `ship-task` pointing to the canonical owner; documentation sweep, 41 repository-tooling tests, and Phase 0 manifest 10/10 passed |
 | Correct stale requirements.txt header descriptions (#32) | 2026-08-24 | `docs/32-correct-requirements-header-descriptions` (PR #38) | Replaced three stale custom-header claims with pip-compile native-header wording, assigned future CI drift enforcement to P1-07, removed the completed P1-04 future-tense lock note, preserved `backend/requirements.txt` byte-for-byte, and preserved the P1-05 `pydantic.mypy` obligation; documentation/history checks and Phase 0 manifest 10/10 passed |
+| Configuration diagnostic confidentiality and audit documentation reconciliation | 2026-09-10 | `codex/fix-audit-readiness` (PR #41) | Merged as `50bc66b88d4f997501f5c4e3565a028aec2883d1`; 125 backend and 57 tooling tests, Ruff, mypy, hooks, and manifest 10/10 passed; squash parent, tree, message, and file set verified against pre-merge objects |
 
 ## Notes
 
