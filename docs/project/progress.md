@@ -30,7 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| Record PR #41 completion | 2026-09-10 | `codex/docs-pr41-merge-status` | Documentation review pending; P1-06 remains stopped pending planning and explicit start authorization |
+| Record PR #41 completion | 2026-09-10 | `codex/docs-pr41-merge-status` (PR #42) | Documentation review pending; P1-06 remains stopped pending planning and explicit start authorization |
 
 ## Deferred or reopened
 
