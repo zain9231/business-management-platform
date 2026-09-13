@@ -30,6 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
+| P1-06 scope governance (#43) | 2026-09-11 | `docs/43-p1-06-governance` (PR #44) | Authorized Decision Log amendment; document verification complete; independent verification passed; implementation remains paused until governance is complete |
 | Record PR #41 completion | 2026-09-10 | `codex/docs-pr41-merge-status` (PR #42) | Documentation review pending; P1-06 remains stopped pending planning and explicit start authorization |
 
 ## Deferred or reopened
@@ -74,3 +75,17 @@ Next task: P1-06
   Phase 4B opens; do not edit the frozen backlog to reconcile its two traceability mechanisms.
 - The 2026-09-10 audit reconciliation restored PRs #26–#29 and corrected P1-05's completion date
   to PR #40's verified UTC merge date, 2026-09-07. Historical evidence above comes from those PRs.
+
+### P1-06 governance amendment (#43)
+
+`phase-0-complete` remains the immutable historical Phase 0 acceptance tag; it is not
+moved or republished for this post-freeze Decision Log amendment. Its annotated tag
+records the original acceptance manifest. The current manifest covers the specification
+including the separately authorized P1-06 decision; reconciliation documents that
+relationship rather than making the historical tag describe new bytes.
+
+- Original Phase 0 manifest SHA-256: `a84e2b1f490bb9ac3e94c806faeb2a5a051a67b6b27a8e5c8410412a942cf5f8`.
+- Current amended manifest SHA-256: `ec7915103d3559db4f65ff8d824e7b039a7fc7499c360e93f9d993518d1d15ef`.
+- Only `docs/project/master-specification-v1.2.docx` changes among the ten artifacts;
+  only its manifest entry changes. The other nine artifact digests remain unchanged.
+- This governance change does not complete P1-06 or its deferred P2-06 factory work.
