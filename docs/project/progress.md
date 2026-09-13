@@ -30,7 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| P1-06 scope governance (#43) | 2026-09-11 | `docs/43-p1-06-governance` (PR #44) | Authorized Decision Log amendment; document verification complete; independent review pending; implementation remains paused until governance is complete |
+| P1-06 scope governance (#43) | 2026-09-11 | `docs/43-p1-06-governance` (PR #44) | Authorized Decision Log amendment; document verification complete; independent verification passed; implementation remains paused until governance is complete |
 | Record PR #41 completion | 2026-09-10 | `codex/docs-pr41-merge-status` (PR #42) | Documentation review pending; P1-06 remains stopped pending planning and explicit start authorization |
 
 ## Deferred or reopened
