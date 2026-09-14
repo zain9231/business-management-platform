@@ -30,7 +30,7 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| P1-06 (#45) | 2026-09-14 | `test/45-p1-06-test-harness` | Governance complete; 185 backend and 57 tooling tests pass; writer verification passed; independent verification pending before PR |
+| P1-06 (#45) | 2026-09-14 | `test/45-p1-06-test-harness` (PR #46) | Governance complete; 185 backend and 57 tooling tests pass; writer verification passed; independent verification pending before merge |
 
 ## Deferred or reopened
 
