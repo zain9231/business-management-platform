@@ -7,25 +7,44 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core import config
+from app.core.config import Settings
 from app.main import create_app
+from tests.conftest import VALID_ENVIRONMENT
 
 
 def test_create_app_returns_distinct_instances() -> None:
     assert create_app() is not create_app()
 
 
-def test_health_live_returns_status_live() -> None:
-    client = TestClient(create_app())
-
+def test_health_live_returns_status_live(client: TestClient) -> None:
     response = client.get("/health/live")
 
     assert response.status_code == 200
     assert response.json() == {"status": "live"}
 
 
-def test_health_live_is_not_mounted_under_api_v1() -> None:
-    client = TestClient(create_app())
+def test_client_fixture_enters_the_managed_lifespan_context(client: TestClient) -> None:
+    assert client.portal is not None
 
+
+def test_settings_fixture_uses_explicit_isolated_values(test_settings: Settings) -> None:
+    assert test_settings.environment == "test"
+    assert test_settings.database_url == VALID_ENVIRONMENT["DATABASE_URL"]
+
+
+def test_settings_environment_patch_restores_within_the_test(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert Settings().environment == "test"
+
+    with monkeypatch.context() as isolated_patch:
+        isolated_patch.setenv("ENVIRONMENT", "production")
+        assert Settings().environment == "production"
+
+    assert Settings().environment == "test"
+
+
+def test_health_live_is_not_mounted_under_api_v1(client: TestClient) -> None:
     response = client.get("/api/v1/health/live")
 
     assert response.status_code == 404

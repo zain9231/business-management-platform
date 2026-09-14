@@ -78,13 +78,34 @@ cp ../.env.example ../.env
 
 ## Tests
 
+Start only PostgreSQL from the repository root; test runs do not need a root `.env`:
+
 ```bash
-.venv/Scripts/pytest     # Windows; use .venv/bin/pytest on Linux/macOS
+docker compose up -d --wait db
 ```
 
-For the PostgreSQL-backed container workflow, run `docker compose up --build --wait` from the
-repository root after preparing the root `.env`. See `docs/deployment/local-development.md` for logs,
-database-shell access, persistence verification, and destructive-reset safety. Python formatting,
-linting, type checking, and Git hooks are available through [the main README](../README.md#quality-checks).
-The full database-backed test harness belongs to P1-06. Migration configuration begins in P2-01;
-its explicit release-step mechanism remains deferred to DEP-01.
+The harness reads `TEST_DATABASE_URL` only. Its local Compose default is
+`postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test`; that final name is a connection
+template and is never created or dropped. Each database-backed pytest run creates an exact
+`bmp_test_<32 lowercase hex>` database, holds an ownership lock, verifies its catalog OID, creates
+only `p106_harness.probe`, and drops only that run-owned database after refusing unknown clients.
+
+From `backend/`, run:
+
+```bash
+.venv/Scripts/pytest -m unit                          # database-free Windows loop
+.venv/Scripts/pytest -m "not concurrency and not dst" # fast loop; includes PostgreSQL tests
+.venv/Scripts/pytest                                  # full gate
+.venv/Scripts/pytest --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+```
+
+Use `.venv/bin/pytest` on Linux/macOS. Override `TEST_DATABASE_URL` only with an explicit
+`postgresql+psycopg` URL containing one host, username, password, and port; query, fragment,
+multi-host, and socket forms are rejected before SQL. Missing PostgreSQL fails integration runs
+rather than skipping them. The generated `coverage.xml` is untracked output and no numeric coverage
+threshold applies at P1-06.
+
+See `docs/deployment/local-development.md` for logs, database-shell access, persistence verification,
+and destructive-reset safety. Python formatting, linting, type checking, and Git hooks are available
+through [the main README](../README.md#quality-checks). Migration configuration begins in P2-01; its
+explicit release-step mechanism remains deferred to DEP-01.
