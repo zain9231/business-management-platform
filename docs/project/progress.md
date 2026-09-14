@@ -30,19 +30,20 @@ Next task: P1-06
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| P1-06 scope governance (#43) | 2026-09-11 | `docs/43-p1-06-governance` (PR #44) | Authorized Decision Log amendment; document verification complete; independent verification passed; implementation remains paused until governance is complete |
-| Record PR #41 completion | 2026-09-10 | `codex/docs-pr41-merge-status` (PR #42) | Documentation review pending; P1-06 remains stopped pending planning and explicit start authorization |
+| P1-06 (#45) | 2026-09-14 | `test/45-p1-06-test-harness` | Governance complete; 185 backend and 57 tooling tests pass; writer verification passed; independent verification pending before PR |
 
 ## Deferred or reopened
 
 | Task | Reason | Revisit at |
 |---|---|---|
+| P1-06 persistent tenant factories | P1-06 provides deterministic typed attributes only because product sessions, tables, and ORM models do not yet exist; the accepted Decision Log amendment preserves the original persistence obligation | P2-06, after P2-01 session/Alembic and P2-02 tenant-table work |
 | Audit 2 remaining remediation (#25) | Immutable-baseline policy (A3), then frozen conventions/booking corrections (F1/F5), remain assigned to two separate PRs by the issue disposition record | After the Phase 1 exit gate |
 
 ## Chores
 
 | Chore | Completed | Branch / PR | Evidence |
 |---|---|---|---|
+| Record P1-06 test-harness scope decision (#43) | 2026-09-13 | `docs/43-p1-06-governance` (PR #44) | Accepted Decision Log amendment merged as `8920f634cb6382dfd5ef61cfc2a455908305e9f8`; independent verification passed; issue #43 closed; the immutable historical `phase-0-complete` tag did not move |
 | Add Claude Code configuration (no issue) | 2026-08-17 | `chore/claude-setup` (PR #3) | Scaffolded the `.claude/` directory: agents, hooks, path-scoped rules, skills, `settings.json`; added `CLAUDE.md`, `CLAUDE.local.md.example`, `.gitignore` |
 | Add context budget hook (no issue) | 2026-08-17 | `chore/context-budget-hook` (PR #4) | Context budget hook spec, implementation, 13 tests, settings entries, `.gitignore` update; also committed a previously uncommitted `settings.json` change enabling `pyright-lsp`, `security-guidance`, and `pr-review-toolkit` at project scope |
 | Reconcile context budget hook doc with Project copy (no issue) | 2026-08-17 | `docs/context-budget-hook-reconcile` (PR #5) | Doc-only: replaced `.claude/context-budget-hook.md` with the version reconciled against the claude.ai Project mirror after PR #4 merged (`46b57fd`); recorded install status, resolved the §6 handoff instruction, closed case 14 with the forced `CONTEXT_BUDGET_TIERS=20000` rationale, labeled §8 executed/retained-as-template |
@@ -60,6 +61,7 @@ Next task: P1-06
 | Move the PR-number self-row rule to Git operating rules (#24) | 2026-08-24 | `docs/24-progress-pr-number-self-row` (PR #37) | Moved the branch-before-PR and verified-number follow-up mechanics from backlog-only `ship-task` to the repository-wide Git/GitHub rules, applied them to both backlog-task and chore PRs, and left `ship-task` pointing to the canonical owner; documentation sweep, 41 repository-tooling tests, and Phase 0 manifest 10/10 passed |
 | Correct stale requirements.txt header descriptions (#32) | 2026-08-24 | `docs/32-correct-requirements-header-descriptions` (PR #38) | Replaced three stale custom-header claims with pip-compile native-header wording, assigned future CI drift enforcement to P1-07, removed the completed P1-04 future-tense lock note, preserved `backend/requirements.txt` byte-for-byte, and preserved the P1-05 `pydantic.mypy` obligation; documentation/history checks and Phase 0 manifest 10/10 passed |
 | Configuration diagnostic confidentiality and audit documentation reconciliation | 2026-09-10 | `codex/fix-audit-readiness` (PR #41) | Merged as `50bc66b88d4f997501f5c4e3565a028aec2883d1`; 125 backend and 57 tooling tests, Ruff, mypy, hooks, and manifest 10/10 passed; squash parent, tree, message, and file set verified against pre-merge objects |
+| Record PR #41 merge completion | 2026-09-10 | `codex/docs-pr41-merge-status` (PR #42) | Documentation-only progress reconciliation; merged as `eac7c097ec6892e53fa0599bd99211ca1af805b0`; the in-progress self-row it created is superseded by this completed record |
 
 ## Notes
 

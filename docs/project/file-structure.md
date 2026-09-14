@@ -57,6 +57,7 @@ business-management-platform/
 │   │   │   ├── dependencies.py
 │   │   │   └── health.py
 │   │   ├── core/
+│   │   │   ├── clock.py
 │   │   │   ├── config.py
 │   │   │   ├── errors.py
 │   │   │   ├── logging.py
@@ -96,6 +97,8 @@ business-management-platform/
 │   │   │   ├── test_staff_contract.py
 │   │   │   └── test_users_contract.py
 │   │   ├── integration/
+│   │   │   ├── test_database_harness.py
+│   │   │   ├── test_database_harness_probes.py
 │   │   │   └── test_tenant_isolation.py
 │   │   ├── unit/
 │   │   │   └── __init__.py
@@ -198,6 +201,8 @@ Three entries above sit outside the Specification section 14 backend layout and 
 `tests/` at the repository root holds tests for repository tooling — currently the `.claude/` hooks. It is separate from `backend/tests/` because those tests exercise the development harness, not the application, and must not be collected by the backend suite or counted in its coverage.
 
 P1-05 adds `tests/hooks/test_quality_tooling.py` for repository quality configuration and command wiring, and `scripts/quality.py` as the cross-platform `format`/`lint`/`typecheck` dispatcher. The three `frontend/` configuration files are lint/format placeholders only; P6-01 owns the package manifest, lockfile, dependencies, TypeScript configuration, and every executable npm command.
+
+P1-06 adds `backend/app/core/clock.py` as the patchable aware-UTC clock boundary. Its test-only PostgreSQL lifecycle remains in `backend/tests/conftest.py`; deterministic typed business, role, and user attribute builders remain in `backend/tests/factories.py`. `test_database_harness.py` proves exact run-owned database lifecycle, rollback, committed-state cleanup, and isolation, while `test_database_harness_probes.py` contains isolated failure and disabled-cleanup controls. These tests create no product schema; persistent ORM factories remain deferred to P2-06.
 
 `.claude/`, `CLAUDE.md`, and `CLAUDE.local.md.example` configure the Claude Code working environment: subagents, hooks, path-scoped rules, and skills. `.claude/settings.local.json` and `CLAUDE.local.md` are personal and git-ignored; only their `.example` counterparts are tracked. `.env.example` is at the repository root, not under `backend/`; `compose.yaml` is also at the root and reads it from there, so one file serves every service. `backend/app/core/config.py` is the executable source of truth for configuration names, types, defaults, sentinel values, and validation. The root `.env.example` is its synchronized safe operator-facing sample, and automated tests keep their exposed key sets aligned.
 

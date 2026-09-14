@@ -42,7 +42,9 @@ has never failed proves nothing.
 ## Markers
 
 Use `unit`, `integration`, `concurrency`, `dst`, `deployment`. The fast loop is
-`pytest -m "not concurrency and not dst"`; the gate is the full suite.
+`pytest -m "not concurrency and not dst"`; it includes integration and deployment tests and fails
+if PostgreSQL is unavailable. Use `pytest -m unit` for the database-free unit loop. The gate is the
+full suite; coverage is an explicit full-suite invocation, not a targeted-test default.
 
 ## Determinism
 
@@ -55,5 +57,7 @@ Use `unit`, `integration`, `concurrency`, `dst`, `deployment`. The fast loop is
 
 ## Isolation
 
-Each test rolls back. Two tests must not be able to observe each other's committed data. If you need
-committed state for a concurrency test, clean it up explicitly.
+Ordinary database tests run inside an outer transaction and roll back. `Session.commit()` releases a
+savepoint; it is not a real database commit. Tests that require externally visible committed state
+use the explicit committed-state helper and its verified cleanup. Two tests must not observe each
+other's committed data. Never share a Session across threads or retry cleanup by killing clients.
