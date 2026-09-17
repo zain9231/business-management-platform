@@ -81,8 +81,9 @@ health checks, logs, database access, persistence verification, and safe reset i
 Native backend development remains available through `backend/README.md`. On Windows, install from
 the editable `backend/pyproject.toml` source; `backend/requirements.txt` is the generated Linux-container
 and deployment lock and is not a Windows installation input. The database-backed test harness is
-planned for P1-06 and CI for P1-07. Migration configuration begins in P2-01; its explicit release-step
-mechanism remains deferred to DEP-01.
+available now; see `backend/README.md` for its guarded PostgreSQL setup, unit/fast/full modes, and
+coverage command. CI remains P1-07 scope. Migration configuration begins in P2-01; its explicit
+release-step mechanism remains deferred to DEP-01.
 
 ## Quality checks
 
@@ -98,8 +99,10 @@ python -m pytest tests/hooks
 ```
 
 `format` applies Ruff fixes; `lint` checks formatting and lint without changing files. Type checking
-uses strict mypy. The two pytest commands collect the backend and repository-tooling suites
-separately. Frontend executable checks begin in P6-01.
+uses strict mypy. The backend command is the full gate and requires PostgreSQL; its documented fast
+loop also includes integration and deployment tests. `python -m pytest -c backend/pyproject.toml
+backend/tests -m unit` is the database-free loop. Repository-tooling tests remain separate. Frontend
+executable checks begin in P6-01.
 
 Install the Git hooks once in every clone, from the repository root with that environment active:
 

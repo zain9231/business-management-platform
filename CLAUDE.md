@@ -109,8 +109,9 @@ sha256sum -c docs/project/phase-0-artifacts.sha256
 # Backend — available from P1-02 onward
 cd backend && ruff format . && ruff check --fix .   # format + lint
 cd backend && mypy app                              # type check
-cd backend && pytest                                # full suite
-cd backend && pytest -m "not concurrency and not dst"  # fast loop
+cd backend && pytest                                # full suite; requires PostgreSQL
+cd backend && pytest -m "not concurrency and not dst"  # fast loop; includes integration/deployment
+cd backend && pytest -m unit                        # unit-only; no PostgreSQL required
 cd backend && alembic upgrade head && alembic downgrade base && alembic upgrade head
 
 # Environment — available from P1-04 onward
