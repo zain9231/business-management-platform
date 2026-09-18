@@ -20,7 +20,6 @@ jobs:
     timeout-minutes: 30
     env:
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
-      PRE_COMMIT_HOME: ${{ runner.temp }}/pre-commit
       PYTHONDONTWRITEBYTECODE: "1"
     services:
       postgres:
@@ -214,6 +213,8 @@ jobs:
             --basetemp="$RUNNER_TEMP/pytest-tooling"
 
       - name: Run non-Gitleaks pre-commit hooks
+        env:
+          PRE_COMMIT_HOME: ${{ runner.temp }}/pre-commit
         shell: bash
         run: |
           set -euo pipefail

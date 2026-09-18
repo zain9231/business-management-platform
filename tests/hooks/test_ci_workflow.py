@@ -29,6 +29,17 @@ POSTGRES_IMAGE = (
     "postgres:18.6-bookworm@sha256:b939b3851e2cccb017dc4497af63b15e34efa57fba036548773c53b2f16a8871"
 )
 GITLEAKS_ARCHIVE_SHA256 = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+EXPECTED_TRIGGER_BLOCK = """\
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+"""
+JOB_ENV_ALLOWED_CONTEXTS = frozenset(
+    {"github", "inputs", "matrix", "needs", "secrets", "strategy", "vars"}
+)
 
 
 class MigrationValidator(Protocol):
@@ -64,6 +75,11 @@ def _generated_command(lock_text: str) -> list[str]:
     return shlex.split(command_line)
 
 
+def _assert_exact_trigger_block(text: str) -> None:
+    assert text.count(EXPECTED_TRIGGER_BLOCK) == 1
+    assert len(re.findall(r"(?m)^on:$", text)) == 1
+
+
 def test_p1_07_owned_files_exist() -> None:
     assert WORKFLOW.is_file()
     assert VALIDATOR.is_file()
@@ -74,71 +90,141 @@ def test_workflow_has_safe_triggers_permissions_and_concurrency() -> None:
     text = _required_text(WORKFLOW)
 
     assert re.search(r"(?m)^name: CI$", text)
-    assert re.search(r"(?m)^  pull_request:$", text)
-    assert re.search(r"(?m)^  push:$", text)
-    assert re.search(r"(?m)^  workflow_dispatch:$", text)
+    _assert_exact_trigger_block(text)
     assert "pull_request_target" not in text
     assert "paths:" not in text
     assert "secrets." not in text
-    assert re.search(r"(?ms)^permissions:\n  contents: read$", text)
+    assert text.count("permissions:\n  contents: read\n") == 1
     assert (
-        "group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
-        in text
+        text.count(
+            "concurrency:\n"
+            "  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}\n"
+            "  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n"
+        )
+        == 1
     )
-    assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in text
-    assert "runs-on: ubuntu-24.04" in text
-    assert "timeout-minutes: 30" in text
+    assert text.count("    runs-on: ubuntu-24.04\n") == 1
+    assert text.count("    timeout-minutes: 30\n") == 1
+
+
+def test_workflow_job_env_uses_only_available_contexts() -> None:
+    text = _required_text(WORKFLOW)
+    match = re.search(r"(?m)^    env:\n(?P<body>(?:      [^\n]*\n)+)", text)
+
+    assert match is not None, "CI job env block is missing"
+    context_roots = set(re.findall(r"\$\{\{\s*([A-Za-z_][A-Za-z0-9_-]*)", match.group("body")))
+    unavailable_contexts = context_roots - JOB_ENV_ALLOWED_CONTEXTS
+    assert not unavailable_contexts, (
+        f"CI job env uses contexts unavailable at jobs.<job_id>.env: {sorted(unavailable_contexts)}"
+    )
+
+
+def test_workflow_scopes_pre_commit_home_to_pre_commit_step() -> None:
+    text = _required_text(WORKFLOW)
+    match = re.search(
+        r"(?ms)^      - name: Run non-Gitleaks pre-commit hooks\n"
+        r"(?P<body>.*?)(?=^      - name:|\Z)",
+        text,
+    )
+
+    assert match is not None, "non-Gitleaks pre-commit step is missing"
+    assert (
+        "        env:\n          PRE_COMMIT_HOME: ${{ runner.temp }}/pre-commit\n"
+    ) in match.group(0)
+    assert text.count("PRE_COMMIT_HOME:") == 1
 
 
 def test_workflow_pins_actions_service_and_checkout_boundary() -> None:
     text = _required_text(WORKFLOW)
 
-    for action, (commit, version) in ACTION_PINS.items():
-        assert f"uses: {action}@{commit}  # {version}" in text
-    assert POSTGRES_IMAGE in text
-    assert "persist-credentials: false" in text
-    assert "fetch-depth: 1" in text
-    assert "POSTGRES_DB: postgres" in text
-    assert '--health-cmd "pg_isready -U postgres -d postgres"' in text
+    expected_uses = [
+        f"        uses: {action}@{commit}  # {version}"
+        for action, (commit, version) in ACTION_PINS.items()
+    ]
+    assert re.findall(r"(?m)^        uses: .+$", text) == expected_uses
+    assert text.count(f"        image: {POSTGRES_IMAGE}\n") == 1
+    assert text.count("          persist-credentials: false\n") == 1
+    assert text.count("          fetch-depth: 1\n") == 1
+    assert text.count("          POSTGRES_DB: postgres\n") == 1
+    assert text.count('          --health-cmd "pg_isready -U postgres -d postgres"\n') == 1
 
 
 def test_workflow_pins_dependency_and_cache_contract() -> None:
     text = _required_text(WORKFLOW)
 
-    assert "python-version: '3.13.15'" in text
-    assert "python -m pip --version" in text
+    assert text.count("          python-version: '3.13.15'\n") == 1
+    assert text.count("          python -m pip --version\n") == 1
     assert (
-        "python -m pip install --require-hashes --requirement backend/requirements-dev.txt" in text
+        text.count(
+            "          python -m pip install --require-hashes --requirement "
+            "backend/requirements-dev.txt\n"
+        )
+        == 1
     )
-    assert 'test "$pip_version" = "26.2.1"' in text
-    assert "python -m pip check" in text
-    assert "path: ${{ steps.pip-cache.outputs.dir }}" in text
-    assert "hashFiles('backend/requirements.txt', 'backend/requirements-dev.txt')" in text
-    assert 'lock_repro_root="$RUNNER_TEMP/lock-repro"' in text
-    assert 'git archive HEAD backend | tar -x -C "$lock_repro_root"' in text
-    assert "pip-compile --allow-unsafe --generate-hashes" in text
-    assert "pip-compile --allow-unsafe --extra dev --generate-hashes" in text
-    assert "diff -u backend/requirements.txt" in text
-    assert "diff -u backend/requirements-dev.txt" in text
+    assert text.count('          test "$pip_version" = "26.2.1"\n') == 1
+    assert text.count("          python -m pip check\n") == 3
+    assert text.count("          path: ${{ steps.pip-cache.outputs.dir }}\n") == 1
+    assert text.count("hashFiles('backend/requirements.txt', 'backend/requirements-dev.txt')") == 1
+    assert text.count('          lock_repro_root="$RUNNER_TEMP/lock-repro"\n') == 1
+    assert text.count('          git archive HEAD backend | tar -x -C "$lock_repro_root"\n') == 1
+    assert (
+        text.count(
+            "            pip-compile --allow-unsafe --generate-hashes \\\n"
+            "              --output-file=requirements.txt pyproject.toml\n"
+        )
+        == 1
+    )
+    assert (
+        text.count(
+            "            pip-compile --allow-unsafe --extra dev --generate-hashes \\\n"
+            "              --output-file=requirements-dev.txt pyproject.toml\n"
+        )
+        == 1
+    )
+    assert (
+        text.count(
+            '          if ! diff -u backend/requirements.txt "$lock_repro_root/backend/requirements.txt"; '
+            "then\n"
+        )
+        == 1
+    )
+    assert (
+        text.count(
+            "          if ! diff -u backend/requirements-dev.txt "
+            '"$lock_repro_root/backend/requirements-dev.txt"; then\n'
+        )
+        == 1
+    )
     assert ".venv" not in text
 
 
 def test_workflow_has_postgresql_and_secret_failure_boundaries() -> None:
     text = _required_text(WORKFLOW)
 
-    assert "postgresql://postgres:postgres@127.0.0.1:5432/postgres" in text
-    assert "connect_timeout=5" in text
-    assert "readiness_result=\"$(python - <<'PY'" in text
-    assert 'leftover_databases="$(docker exec "${{ job.services.postgres.id }}"' in text
-    assert "^bmp_test_[0-9a-f]{32}$" in text
-    assert "Leftover run-owned databases:" in text
-    assert 'if [[ -n "$leftover_databases" ]]' in text
-    assert GITLEAKS_ARCHIVE_SHA256 in text
-    assert "gitleaks_8.30.1_linux_x64.tar.gz" in text
-    assert "--exit-code 42" in text
-    assert "aws-access-token" in text
+    assert text.count("postgresql://postgres:postgres@127.0.0.1:5432/postgres") == 1
+    assert text.count("              connect_timeout=5,\n") == 1
+    assert text.count("          readiness_result=\"$(python - <<'PY'\n") == 1
+    assert (
+        text.count(
+            '          leftover_databases="$(docker exec "${{ job.services.postgres.id }}" \\\n'
+        )
+        == 1
+    )
+    assert text.count("^bmp_test_[0-9a-f]{32}$") == 1
+    assert text.count('            echo "Leftover run-owned databases:"\n') == 1
+    assert text.count('          if [[ -n "$leftover_databases" ]]; then\n') == 1
+    assert text.count(GITLEAKS_ARCHIVE_SHA256) == 1
+    assert text.count("gitleaks_8.30.1_linux_x64.tar.gz") == 2
+    assert text.count("--exit-code 42") == 1
+    assert text.count("aws-access-token") == 1
     assert text.count("gitleaks dir --redact --no-banner --verbose .") == 2
-    assert "SKIP=gitleaks,gitleaks-dir python -m pre_commit run --all-files" in text
+    assert (
+        text.count(
+            "          SKIP=gitleaks,gitleaks-dir python -m pre_commit run --all-files "
+            "--show-diff-on-failure\n"
+        )
+        == 1
+    )
 
 
 def test_workflow_runs_the_required_gates_in_order() -> None:
@@ -154,18 +240,22 @@ def test_workflow_runs_the_required_gates_in_order() -> None:
         'checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignored)"',
         "sha256sum -c docs/project/phase-0-artifacts.sha256",
     ]
+    assert all(text.count(marker) == 1 for marker in markers)
     positions = [text.index(marker) for marker in markers]
 
     assert positions == sorted(positions)
-    assert "TEST_DATABASE_URL=not-a-database-url" in text
+    assert text.count("TEST_DATABASE_URL=not-a-database-url") == 1
     assert (
-        "TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test" in text
+        text.count(
+            "TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test"
+        )
+        == 1
     )
-    assert '--basetemp="$RUNNER_TEMP/pytest-unit"' in text
-    assert '--basetemp="$RUNNER_TEMP/pytest-full"' in text
-    assert '--basetemp="$RUNNER_TEMP/pytest-tooling"' in text
-    assert "git diff --exit-code" in text
-    assert 'test -z "$checkout_status"' in text
+    assert text.count('--basetemp="$RUNNER_TEMP/pytest-unit"') == 1
+    assert text.count('--basetemp="$RUNNER_TEMP/pytest-full"') == 1
+    assert text.count('--basetemp="$RUNNER_TEMP/pytest-tooling"') == 1
+    assert text.count("git diff --exit-code") == 1
+    assert text.count('test -z "$checkout_status"') == 1
 
 
 def test_dependency_sources_and_hash_locks_are_explicit() -> None:
