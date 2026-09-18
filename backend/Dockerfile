@@ -13,7 +13,7 @@ RUN python -m venv "${VIRTUAL_ENV}"
 
 COPY requirements.txt ./requirements.txt
 
-RUN python -m pip install --requirement requirements.txt \
+RUN python -m pip install --require-hashes --requirement requirements.txt \
     && python -m pip check \
     && python -m pip uninstall --yes pip setuptools wheel
 

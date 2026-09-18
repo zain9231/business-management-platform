@@ -82,8 +82,9 @@ Native backend development remains available through `backend/README.md`. On Win
 the editable `backend/pyproject.toml` source; `backend/requirements.txt` is the generated Linux-container
 and deployment lock and is not a Windows installation input. The database-backed test harness is
 available now; see `backend/README.md` for its guarded PostgreSQL setup, unit/fast/full modes, and
-coverage command. CI remains P1-07 scope. Migration configuration begins in P2-01; its explicit
-release-step mechanism remains deferred to DEP-01.
+coverage command. GitHub Actions now runs the pinned, hash-checked CI gate. Migration configuration
+begins in P2-01; until then, CI rejects any partial Alembic surface. Its explicit release-step
+mechanism remains deferred to DEP-01.
 
 ## Quality checks
 
@@ -103,6 +104,45 @@ uses strict mypy. The backend command is the full gate and requires PostgreSQL; 
 loop also includes integration and deployment tests. `python -m pytest -c backend/pyproject.toml
 backend/tests -m unit` is the database-free loop. Repository-tooling tests remain separate. Frontend
 executable checks begin in P6-01.
+
+### CI-equivalent checks
+
+After completing the [backend setup](backend/README.md#setup), run the public CI commands from the
+repository root in this order. Set `RUNNER_TEMP` to a writable temporary directory for local runs.
+
+```bash
+python -m pip check
+lock_repro_root="$RUNNER_TEMP/lock-repro"
+mkdir -p "$lock_repro_root"
+git archive HEAD backend | tar -x -C "$lock_repro_root"
+(
+  cd "$lock_repro_root/backend"
+  pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
+  pip-compile --allow-unsafe --extra dev --generate-hashes \
+    --output-file=requirements-dev.txt pyproject.toml
+)
+cmp --silent backend/requirements.txt "$lock_repro_root/backend/requirements.txt"
+cmp --silent backend/requirements-dev.txt "$lock_repro_root/backend/requirements-dev.txt"
+python -m pip check
+python scripts/quality.py lint
+python scripts/quality.py typecheck
+python scripts/validate_migrations.py
+TEST_DATABASE_URL=not-a-database-url python -m pytest -c backend/pyproject.toml \
+  backend/tests -m unit -p no:cacheprovider --basetemp="$RUNNER_TEMP/pytest-unit"
+TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test \
+  python -m pytest -c backend/pyproject.toml backend/tests -p no:cacheprovider \
+  --basetemp="$RUNNER_TEMP/pytest-full"
+python -m pytest tests/hooks -p no:cacheprovider --basetemp="$RUNNER_TEMP/pytest-tooling"
+SKIP=gitleaks,gitleaks-dir python -m pre_commit run --all-files --show-diff-on-failure
+git diff --exit-code
+checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignored)"
+test -z "$checkout_status"
+gitleaks dir --redact --no-banner --verbose .
+sha256sum -c docs/project/phase-0-artifacts.sha256
+```
+
+Unit mode is database-free. The full suite requires PostgreSQL. The Gitleaks `dir` command scans the
+checked-out files, including `.git` metadata, but it is not a full-history scan.
 
 Install the Git hooks once in every clone, from the repository root with that environment active:
 

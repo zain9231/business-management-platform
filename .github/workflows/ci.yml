@@ -1,0 +1,254 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PRE_COMMIT_HOME: ${{ runner.temp }}/pre-commit
+      PYTHONDONTWRITEBYTECODE: "1"
+    services:
+      postgres:
+        image: postgres:18.6-bookworm@sha256:b939b3851e2cccb017dc4497af63b15e34efa57fba036548773c53b2f16a8871
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out exact commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install checksum-pinned Gitleaks
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/gitleaks_8.30.1_linux_x64.tar.gz"
+          binary_dir="$RUNNER_TEMP/gitleaks-bin"
+          mkdir -p "$binary_dir"
+          curl --fail --location --silent --show-error \
+            --output "$archive" \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $archive" \
+            | sha256sum -c -
+          tar -xzf "$archive" -C "$binary_dir" gitleaks
+          echo "$binary_dir" >> "$GITHUB_PATH"
+          test "$("$binary_dir/gitleaks" version)" = "8.30.1"
+
+      - name: Prove Gitleaks detects and redacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          canary_dir="$RUNNER_TEMP/gitleaks-canary"
+          canary_report="$RUNNER_TEMP/gitleaks-canary.json"
+          canary_output="$RUNNER_TEMP/gitleaks-canary-output.txt"
+          mkdir -p "$canary_dir"
+          trap 'rm -rf -- "$canary_dir"; rm -f -- "$canary_report" "$canary_output"' EXIT
+          printf '%s%s%s\n' 'aws_access_key_id=' 'AKIA' 'Q7W3N5P2L6M4R7TX' \
+            > "$canary_dir/canary.env"
+          set +e
+          gitleaks dir --redact --no-banner --report-format json \
+            --report-path "$canary_report" --exit-code 42 "$canary_dir" \
+            > "$canary_output" 2>&1
+          canary_status=$?
+          set -e
+          if [[ "$canary_status" -ne 42 ]]; then
+            cat "$canary_output"
+            exit 1
+          fi
+          python - "$canary_report" "$canary_output" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          report_path = Path(sys.argv[1])
+          output_path = Path(sys.argv[2])
+          report_bytes = report_path.read_bytes()
+          output_bytes = output_path.read_bytes()
+          findings = json.loads(report_bytes)
+          expected_secret = ("AKIA" + "Q7W3N5P2L6M4R7TX").encode()
+          if not findings:
+              raise SystemExit("Gitleaks canary report was empty")
+          if {finding["RuleID"] for finding in findings} != {"aws-access-token"}:
+              raise SystemExit("Gitleaks canary reported an unexpected rule")
+          if any(finding.get("Match") != "REDACTED" for finding in findings):
+              raise SystemExit("Gitleaks canary match was not redacted")
+          if any(finding.get("Secret") != "REDACTED" for finding in findings):
+              raise SystemExit("Gitleaks canary secret was not redacted")
+          if expected_secret in report_bytes or expected_secret in output_bytes:
+              raise SystemExit("Gitleaks canary plaintext was disclosed")
+          PY
+
+      - name: Scan committed checkout before installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          gitleaks dir --redact --no-banner --verbose .
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: '3.13.15'
+
+      - name: Locate pip download cache
+        id: pip-cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "dir=$(python -m pip cache dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pip downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: pip-${{ runner.os }}-${{ runner.arch }}-py3.13.15-${{ hashFiles('backend/requirements.txt', 'backend/requirements-dev.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-${{ runner.arch }}-py3.13.15-
+
+      - name: Install hash-checked development dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip --version
+          python -m pip install --require-hashes --requirement backend/requirements-dev.txt
+          pip_version="$(python -c 'import importlib.metadata as m; print(m.version("pip"))')"
+          test "$pip_version" = "26.2.1"
+          python -m pip check
+
+      - name: Prove runner-to-PostgreSQL readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          readiness_result="$(python - <<'PY'
+          import psycopg
+
+          with psycopg.connect(
+              "postgresql://postgres:postgres@127.0.0.1:5432/postgres",
+              connect_timeout=5,
+          ) as connection:
+              print(connection.execute("SELECT 1").fetchone()[0])
+          PY
+          )"
+          test "$readiness_result" = "1"
+
+      - name: Check dependency integrity and lock reproducibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip check
+          lock_repro_root="$RUNNER_TEMP/lock-repro"
+          mkdir -p "$lock_repro_root"
+          git archive HEAD backend | tar -x -C "$lock_repro_root"
+          (
+            cd "$lock_repro_root/backend"
+            pip-compile --allow-unsafe --generate-hashes \
+              --output-file=requirements.txt pyproject.toml
+            pip-compile --allow-unsafe --extra dev --generate-hashes \
+              --output-file=requirements-dev.txt pyproject.toml
+          )
+          if ! diff -u backend/requirements.txt "$lock_repro_root/backend/requirements.txt"; then
+            echo "Runtime lock differs from the generated lock."
+            exit 1
+          fi
+          if ! diff -u backend/requirements-dev.txt "$lock_repro_root/backend/requirements-dev.txt"; then
+            echo "Development lock differs from the generated lock."
+            exit 1
+          fi
+          python -m pip check
+
+      - name: Format check and lint
+        run: python scripts/quality.py lint
+
+      - name: Strict type check
+        run: python scripts/quality.py typecheck
+
+      - name: Validate migration state
+        run: python scripts/validate_migrations.py
+
+      - name: Run database-free unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEST_DATABASE_URL=not-a-database-url python -m pytest -c backend/pyproject.toml \
+            backend/tests -m unit -p no:cacheprovider \
+            --basetemp="$RUNNER_TEMP/pytest-unit"
+
+      - name: Run full backend suite against PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test \
+            python -m pytest -c backend/pyproject.toml backend/tests -p no:cacheprovider \
+            --basetemp="$RUNNER_TEMP/pytest-full"
+
+      - name: Run repository tooling tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest tests/hooks -p no:cacheprovider \
+            --basetemp="$RUNNER_TEMP/pytest-tooling"
+
+      - name: Run non-Gitleaks pre-commit hooks
+        shell: bash
+        run: |
+          set -euo pipefail
+          SKIP=gitleaks,gitleaks-dir python -m pre_commit run --all-files --show-diff-on-failure
+
+      - name: Require an unchanged clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignored)"
+          test -z "$checkout_status"
+
+      - name: Rescan the clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          gitleaks dir --redact --no-banner --verbose .
+
+      - name: Verify the Phase 0 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c docs/project/phase-0-artifacts.sha256
+
+      - name: Require no leftover run-owned databases
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          leftover_databases="$(docker exec "${{ job.services.postgres.id }}" \
+            psql -U postgres -d postgres -v ON_ERROR_STOP=1 -Atqc \
+            "SELECT datname FROM pg_database WHERE datname ~ '^bmp_test_[0-9a-f]{32}$' ORDER BY datname")"
+          if [[ -n "$leftover_databases" ]]; then
+            echo "Leftover run-owned databases:"
+            printf '%s\n' "$leftover_databases"
+            exit 1
+          fi

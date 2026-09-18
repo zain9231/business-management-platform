@@ -1,7 +1,8 @@
 # Backend
 
-FastAPI application package. Pinned dependency source is `pyproject.toml`; `requirements.txt` is a
-generated export and must never be hand-edited.
+FastAPI application package. `pyproject.toml` is the only editable dependency source.
+`requirements.txt` is the runtime lock, and `requirements-dev.txt` contains runtime and development
+dependencies. Both generated locks are hash checked and must never be hand-edited.
 
 `httpx2` (not `httpx`) is the pinned test-client dependency: it is what `starlette.testclient`
 actually imports when present (`import httpx2 as httpx`, tried before the deprecated `httpx` path).
@@ -15,10 +16,20 @@ python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"     # Windows; use .venv/bin/pip on Linux/macOS
 ```
 
-`requirements.txt` is the generated Linux-container/deployment lock. It includes Linux-only
-dependencies such as `uvloop` and omits Windows-only transitive packages, so native Windows
-development must use the editable `pyproject.toml` installation above rather than
-`pip install -r requirements.txt`.
+The generated locks target the pinned Linux/AMD64 Python 3.13.15 environment. `requirements.txt` is
+the container/deployment lock; `requirements-dev.txt` adds test, quality, and CI tooling. They include
+Linux-only dependencies such as `uvloop` and omit Windows-only transitive packages, so native Windows
+development must use the editable `pyproject.toml` installation above. CI installs the development
+lock with `python -m pip install --require-hashes --requirement requirements-dev.txt`; the runtime
+container installs `requirements.txt` with the same hash enforcement.
+
+Regenerate both locks only in the pinned Linux environment with `pip-tools==7.6.1`:
+
+```bash
+pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
+pip-compile --allow-unsafe --extra dev --generate-hashes \
+  --output-file=requirements-dev.txt pyproject.toml
+```
 
 Activate this environment before running the repository-root quality and Git-hook setup commands
 in [the main README](../README.md#quality-checks): `.venv\Scripts\Activate.ps1` in PowerShell or

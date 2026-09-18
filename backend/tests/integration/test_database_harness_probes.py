@@ -21,10 +21,13 @@ def _run_probe(source: str, probe_path: Path) -> subprocess.CompletedProcess[str
             "-m",
             "pytest",
             "-vv",
+            "--verbosity=1",
             "-p",
             "tests.conftest",
             "-p",
             "no:cacheprovider",
+            "--rootdir",
+            str(BACKEND_ROOT),
             "--basetemp",
             str(probe_path.parent / "child-basetemp"),
             str(probe_path),
@@ -64,9 +67,9 @@ def test_{second}(test_database_harness):
     )
 
     combined = result.stdout + result.stderr
-    assert result.returncode == 1
-    assert "1 failed, 1 passed" in combined
-    assert f"negative-{first}" in combined
+    assert result.returncode == 1, combined
+    assert "1 failed, 1 passed" in combined, combined
+    assert f"negative-{first}" in combined, combined
 
 
 def test_real_commit_cleanup_runs_after_a_deliberate_assertion_failure(tmp_path: Path) -> None:
@@ -85,7 +88,7 @@ def test_following_observer_starts_empty(committed_probe):
     )
 
     combined = result.stdout + result.stderr
-    assert result.returncode == 1
-    assert "test_deliberate_failure_after_commit FAILED" in combined
-    assert "test_following_observer_starts_empty PASSED" in combined
-    assert "1 failed, 1 passed" in combined
+    assert result.returncode == 1, combined
+    assert "test_deliberate_failure_after_commit FAILED" in combined, combined
+    assert "test_following_observer_starts_empty PASSED" in combined, combined
+    assert "1 failed, 1 passed" in combined, combined
