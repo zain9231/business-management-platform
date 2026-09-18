@@ -31,7 +31,7 @@ Next task: P1-07
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| P1-07 (#47) | 2026-09-17 | `chore/47-p1-07-continuous-integration` | None; implementation and local verification in progress |
+| P1-07 (#47) | 2026-09-17 | `chore/47-p1-07-continuous-integration` (PR #48) | None; implementation and local verification in progress |
 
 ## Deferred or reopened
 
