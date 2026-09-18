@@ -350,10 +350,13 @@ class CommittedProbe:
 
 DatabaseHarnessFactory = Callable[[], AbstractContextManager[TestDatabaseHarness]]
 
+VALID_JWT_SECRET_PARTS = ("correct", "horse", "battery", "staple", "0123456789")
+VALID_JWT_SECRET = "-".join(VALID_JWT_SECRET_PARTS)
+
 VALID_ENVIRONMENT: dict[str, str] = {
     "ENVIRONMENT": "test",
     "DATABASE_URL": "postgresql+psycopg://postgres:postgres@localhost:5432/business_management_platform_test",
-    "JWT_SECRET": "correct-horse-battery-staple-0123456789",
+    "JWT_SECRET": VALID_JWT_SECRET,
     "JWT_ISSUER": "business-management-platform",
     "JWT_AUDIENCE": "business-management-platform-api",
     "CORS_ALLOWED_ORIGINS": '["http://localhost:5173"]',

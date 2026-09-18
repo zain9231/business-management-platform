@@ -12,7 +12,13 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_ROOT = REPOSITORY_ROOT / "backend"
-PYTHON_TARGETS = ("app", "tests", "../tests", "../scripts/quality.py")
+PYTHON_TARGETS = (
+    "app",
+    "tests",
+    "../tests",
+    "../scripts/quality.py",
+    "../scripts/validate_migrations.py",
+)
 COMMANDS = ("format", "lint", "typecheck")
 MISSING_TOOL_EXIT_STATUS = 127
 LAUNCH_ERROR_EXIT_STATUS = 126

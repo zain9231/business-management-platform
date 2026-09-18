@@ -26,6 +26,7 @@ dev = [
     "httpx2==2.11.0",
     "ruff==0.16.3",
     "mypy==2.3.1",
+    "pip==26.2.1",
     "pip-tools==7.6.1",
     "pre-commit==4.6.2",
     "python-dotenv[cli]==1.2.3",
@@ -62,7 +63,7 @@ incremental = false
 warn_unreachable = true
 warn_unused_configs = true
 show_error_codes = true
-files = ["app", "tests", "../tests", "../scripts/quality.py"]
+files = ["app", "tests", "../tests", "../scripts/quality.py", "../scripts/validate_migrations.py"]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

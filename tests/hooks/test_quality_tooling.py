@@ -53,7 +53,13 @@ MUTATING_TEXT_HOOK_IDS = (
     "mixed-line-ending",
     "fix-byte-order-marker",
 )
-OWNED_TARGETS = ["app", "tests", "../tests", "../scripts/quality.py"]
+OWNED_TARGETS = [
+    "app",
+    "tests",
+    "../tests",
+    "../scripts/quality.py",
+    "../scripts/validate_migrations.py",
+]
 RUFF_PREFIX = [sys.executable, "-m", "ruff"]
 EXPECTED_COMMANDS = {
     "format": [

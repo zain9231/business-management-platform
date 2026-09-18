@@ -33,7 +33,8 @@ PLACEHOLDER_MARKERS = [
 
 ENV_EXAMPLE_SENTINEL = "replace-me-with-at-least-32-random-bytes"
 
-VALID_SECRET = "correct-horse-battery-staple-0123456789"
+VALID_SECRET_PARTS = ("correct", "horse", "battery", "staple", "0123456789")
+VALID_SECRET = "-".join(VALID_SECRET_PARTS)
 
 
 @pytest.mark.parametrize("missing_var", REQUIRED_NO_DEFAULT_VARS)
