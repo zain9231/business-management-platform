@@ -41,9 +41,24 @@ bytes. Do not commit `.env`. The PostgreSQL username, password, and database hav
 defaults in `compose.yaml`; exported `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` values
 override them without changing the file.
 
-Build and start both services, waiting for their health checks:
+Build and start both services, waiting for their health checks. Keep this shell open so later health,
+stop, restart, and reset commands retain the same ports. The ordinary defaults are 5432 and 8000;
+proof runs set distinct run-owned values before startup.
+
+PowerShell:
+
+```powershell
+if (-not $env:POSTGRES_PORT) { $env:POSTGRES_PORT = "5432" }
+if (-not $env:BACKEND_PORT) { $env:BACKEND_PORT = "8000" }
+docker compose up --build --wait
+docker compose ps
+```
+
+Linux, macOS, or Git Bash:
 
 ```bash
+export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export BACKEND_PORT="${BACKEND_PORT:-8000}"
 docker compose up --build --wait
 docker compose ps
 ```
@@ -57,13 +72,13 @@ Confirm the backend response:
 PowerShell:
 
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8000/health/live
+Invoke-RestMethod "http://127.0.0.1:$env:BACKEND_PORT/health/live"
 ```
 
 Linux, macOS, or Git Bash:
 
 ```bash
-curl --fail http://127.0.0.1:8000/health/live
+curl --fail "http://127.0.0.1:${BACKEND_PORT}/health/live"
 ```
 
 The response is `{"status":"live"}`.

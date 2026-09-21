@@ -23,7 +23,8 @@ development must use the editable `pyproject.toml` installation above. CI instal
 lock with `python -m pip install --require-hashes --requirement requirements-dev.txt`; the runtime
 container installs `requirements.txt` with the same hash enforcement.
 
-Regenerate both locks only in the pinned Linux environment with `pip-tools==7.6.1`:
+Regenerate both locks only inside the pinned Linux/AMD64 image declared by `PYTHON_IMAGE` in
+`Dockerfile`, with `pip-tools==7.6.1`. Do not run these commands with native Windows Python:
 
 ```bash
 pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
@@ -59,10 +60,28 @@ messages free of input values, and never log settings objects.
 | `REFRESH_TOKEN_EXPIRE_DAYS` | default `14` | positive integer |
 
 If the required variables are already exported in the shell (CI, a container, a configured
-launcher), start the backend directly:
+launcher), start the backend directly. Keep 8000 as the ordinary default while allowing the caller
+to provide a run-owned `BACKEND_PORT`.
+
+PowerShell:
+
+```powershell
+if (-not $env:BACKEND_PORT) { $env:BACKEND_PORT = "8000" }
+.venv/Scripts/uvicorn app.main:create_app --factory --reload --port $env:BACKEND_PORT
+```
+
+Linux or macOS:
 
 ```bash
-.venv/Scripts/uvicorn app.main:create_app --factory --reload     # Windows; use .venv/bin/uvicorn on Linux/macOS
+export BACKEND_PORT="${BACKEND_PORT:-8000}"
+.venv/bin/uvicorn app.main:create_app --factory --reload --port "$BACKEND_PORT"
+```
+
+Git Bash on Windows:
+
+```bash
+export BACKEND_PORT="${BACKEND_PORT:-8000}"
+.venv/Scripts/uvicorn app.main:create_app --factory --reload --port "$BACKEND_PORT"
 ```
 
 Otherwise, copy the root example, edit the secret, and load the edited `.env` into the child
@@ -74,24 +93,49 @@ PowerShell:
 ```powershell
 Copy-Item ..\.env.example ..\.env
 # Edit ..\.env and replace JWT_SECRET
-.venv/Scripts/python -m dotenv -f ../.env run -- ./.venv/Scripts/uvicorn app.main:create_app --factory --reload
+if (-not $env:BACKEND_PORT) { $env:BACKEND_PORT = "8000" }
+.venv/Scripts/python -m dotenv -f ../.env run -- ./.venv/Scripts/uvicorn app.main:create_app --factory --reload --port $env:BACKEND_PORT
 ```
 
-Linux/macOS/Git Bash:
+Linux or macOS:
 
 ```bash
 cp ../.env.example ../.env
 # Edit ../.env and replace JWT_SECRET
-.venv/bin/python -m dotenv -f ../.env run -- ./.venv/bin/uvicorn app.main:create_app --factory --reload
+export BACKEND_PORT="${BACKEND_PORT:-8000}"
+.venv/bin/python -m dotenv -f ../.env run -- ./.venv/bin/uvicorn app.main:create_app --factory --reload --port "$BACKEND_PORT"
 ```
 
-`GET /health/live` returns `{"status": "live"}` once the process is up.
+Git Bash on Windows:
+
+```bash
+cp ../.env.example ../.env
+# Edit ../.env and replace JWT_SECRET
+export BACKEND_PORT="${BACKEND_PORT:-8000}"
+.venv/Scripts/python -m dotenv -f ../.env run -- ./.venv/Scripts/uvicorn app.main:create_app --factory --reload --port "$BACKEND_PORT"
+```
+
+`GET /health/live` returns `{"status":"live"}` once the process is up.
 
 ## Tests
 
-Start only PostgreSQL from the repository root; test runs do not need a root `.env`:
+Start only PostgreSQL from the repository root; test runs do not need a root `.env`. Keep 5432 as
+the ordinary default, but export a different run-owned `POSTGRES_PORT` when required. Set
+`TEST_DATABASE_URL` explicitly so every database-backed command targets that owned service.
+
+PowerShell:
+
+```powershell
+if (-not $env:POSTGRES_PORT) { $env:POSTGRES_PORT = "5432" }
+$env:TEST_DATABASE_URL = "postgresql+psycopg://postgres:postgres@127.0.0.1:$env:POSTGRES_PORT/bmp_test"
+docker compose up -d --wait db
+```
+
+Linux, macOS, or Git Bash:
 
 ```bash
+export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export TEST_DATABASE_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:${POSTGRES_PORT}/bmp_test"
 docker compose up -d --wait db
 ```
 

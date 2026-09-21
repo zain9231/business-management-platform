@@ -11,7 +11,7 @@ Update it in the same PR that completes a task.
 
 All dates in this file are UTC — the timezone `gh` reports merge and close times in — not local time.
 
-Next task: P1-07
+Next task: P2-01, after the phase-1-complete checkpoint
 
 ## Completed
 
@@ -26,12 +26,13 @@ Next task: P1-07
 | P1-04 (#33) | 2026-08-24 | `feat/p1-04-docker-compose-postgres` (PR #34) | Pinned Linux/AMD64 Python 3.13.15 and PostgreSQL 18.6 images; multi-stage non-root backend image with Python-standard-library health check, builder-stage `pip check`, and no runtime pip; PostgreSQL 18 named volume mounted at `/var/lib/postgresql`; distinct test-first Compose/Dockerfile failures followed by healthy clean-stack verification; `GET /health/live` returned 200 with `{"status":"live"}`; marker row survived `down`/`up`; approved `down -v` diff removed only the project volume and the recreated PostgreSQL 18 data directory and both services were healthy; Linux lock added `uvloop` and removed Windows-only `colorama`/`tzdata`; governed nested `.env` read was denied; 112 backend and 41 repository-tooling tests passed; Ruff, mypy, Dockerfile check, and Phase 0 manifest 10/10 passed; local-development workflow documented; no contract tests assigned |
 | P1-05 (#39) | 2026-09-07 | `chore/p1-05-code-quality-tooling` (PR #40) | 13 quality-tooling tests, 112 backend tests, and 55 repository-tooling tests passed; single-command format, lint, and typecheck runner verified; Ruff formatting/linting and strict mypy passed across 23 owned Python files; frontend lint/format placeholders and pinned pre-commit hooks configured with the protected-text exclusion; upstream provenance verified for all three hook repositories; secret-delta scan passed with a proven-detecting positive control; Linux generated export reproduced `backend/requirements.txt` byte-for-byte; Phase 0 manifest 10/10 passed |
 | P1-06 (#45) | 2026-09-17 | `test/45-p1-06-test-harness` (PR #46) | Test harness implementation and documentation committed; independent verification passed; 185 backend and 57 tooling tests, Ruff, strict mypy, hook gate, and Phase 0 manifest 10/10 passed; persistent tenant factories remain deferred to P2-06; merged as `e68607bcca66ad053bc829cb52b92966361c305a` |
+| P1-07 (#47) | 2026-09-18 | `chore/47-p1-07-continuous-integration` (PR #48) | GitHub Actions CI gate delivered with pinned Ubuntu, Python, and PostgreSQL boundaries; hash-checked dependency installation; migration-state validation; Ruff, strict mypy, backend and repository-tooling tests, hooks, coverage, lock-drift, and clean-tree checks; independent review and hosted CI passed; merged as `bec3a2a616bb20cb7aab6ce5667876c1dbf95db0` |
 
 ## In progress
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| P1-07 (#47) | 2026-09-17 | `chore/47-p1-07-continuous-integration` (PR #48) | None; implementation and local verification in progress |
+| P1-08 (#49) | 2026-09-20 | `docs/49-p1-08-developer-readme` | None; this docs branch also carries one narrowly authorized backend test correction in `backend/tests/integration/test_database_harness_probes.py` after run-owned port verification exposed its hard-coded `TEST_DATABASE_URL` override. |
 
 ## Deferred or reopened
 

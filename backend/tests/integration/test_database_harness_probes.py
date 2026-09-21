@@ -11,9 +11,9 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 def _run_probe(source: str, probe_path: Path) -> subprocess.CompletedProcess[str]:
     probe_path.write_text(source, encoding="utf-8", newline="\n")
     environment = os.environ.copy()
-    environment["TEST_DATABASE_URL"] = (
-        "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test"
-    )
+    test_database_url = environment.get("TEST_DATABASE_URL")
+    if test_database_url is None or not test_database_url.strip():
+        raise RuntimeError("TEST_DATABASE_URL must be set for subprocess probes")
     return subprocess.run(
         [
             sys.executable,
