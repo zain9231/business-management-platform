@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -141,3 +142,74 @@ def test_dbml_and_finalized_contracts_share_an_authority_marker() -> None:
 
 def test_root_readme_links_the_canonical_project_layout() -> None:
     assert LAYOUT_TARGET in _link_targets(_text(ROOT_README))
+
+
+def test_local_development_dump_outputs_are_ignored() -> None:
+    documentation = _text(LOCAL_DEVELOPMENT)
+    dump_blocks = [
+        (language.lower(), body)
+        for language, body in _fenced_blocks(documentation)
+        if "pg_dump" in body
+    ]
+    assert dump_blocks, "local-development.md must document at least one dump command"
+    assert documentation.count("pg_dump") == len(dump_blocks), (
+        "each documented pg_dump command must have one fenced block"
+    )
+    assert {language for language, _ in dump_blocks} == {"powershell", "bash"}
+
+    for language, body in dump_blocks:
+        assert body.count("pg_dump") == 1, "each dump block must have one pg_dump"
+        pattern = (
+            r"(?m)\bSet-Content\s+-Encoding\s+utf8\s+(?P<path>\S+)"
+            if language == "powershell"
+            else r"(?m)^\s*>\s*(?P<path>\S+)\s*$"
+        )
+        output_match = re.search(pattern, body)
+        assert output_match is not None, f"{language} dump output is not identified"
+        output = output_match.group("path").strip("'\"")
+        assert output and not Path(output).is_absolute()
+
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPOSITORY_ROOT),
+                "check-ignore",
+                "-v",
+                "--no-index",
+                "--",
+                output,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, (
+            f"{output} is not ignored by the repository .gitignore: {result.stderr}"
+        )
+        source = result.stdout.partition("\t")[0].split(":", maxsplit=1)[0]
+        assert source == ".gitignore", (
+            f"{output} must be ignored by the repository .gitignore, not {source}"
+        )
+
+
+def test_ci_equivalent_environment_setup_precedes_import_check() -> None:
+    section = _section(_text(ROOT_README), "### CI-equivalent checks")
+    bash_blocks = [body for language, body in _fenced_blocks(section) if language == "bash"]
+    import_index = next(
+        (index for index, body in enumerate(bash_blocks) if "import pathlib, app" in body),
+        None,
+    )
+    assert import_index is not None, "CI-equivalent import-origin check is missing"
+    assert import_index > 0, "external environment setup must precede the import check"
+    setup = bash_blocks[import_index - 1]
+    for token in (
+        "${RUNNER_TEMP:?",
+        "git archive HEAD backend",
+        'python -m venv "$RUNNER_TEMP/',
+        "Scripts/activate",
+        "bin/activate",
+        'pip install -e ".[dev]"',
+    ):
+        assert token in setup, f"external environment setup lacks {token}"
+    assert "requirements-dev.txt" not in setup

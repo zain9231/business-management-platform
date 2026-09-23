@@ -138,6 +138,37 @@ The commands below orchestrate on the host except for the two `pip-compile` line
 container-executed lock step uses pinned `pip-tools==7.6.1` in the Linux/AMD64 image read from
 `backend/Dockerfile`. The two `cmp` commands then run back on the host.
 
+Run this setup block first, in the same shell as the sequence below, with RUNNER_TEMP naming an existing directory outside the checkout.
+
+```bash
+ci_environment_setup() {
+  export PIP_DISABLE_PIP_VERSION_CHECK=1
+  export PYTHONDONTWRITEBYTECODE=1
+  : "${RUNNER_TEMP:?set RUNNER_TEMP outside the checkout}"
+  : "${PIP_CACHE_DIR:?set PIP_CACHE_DIR outside the checkout}"
+  checkout_root="$(pwd -P)"
+  runner_temp_root="$(cd "$RUNNER_TEMP" && pwd -P)" || {
+    printf '%s\n' 'RUNNER_TEMP must name an existing directory outside the checkout' >&2
+    return 1
+  }
+  case "$runner_temp_root" in
+    "$checkout_root"|"$checkout_root"/*)
+      printf '%s\n' 'RUNNER_TEMP must be outside the checkout' >&2
+      return 1 ;;
+  esac
+  python -c 'import sys; assert sys.version_info[:2] == (3, 13), "Python 3.13 is required"' || return 1
+  mkdir -p "$RUNNER_TEMP/ci-environment-source" || return 1
+  git archive HEAD backend | tar -x -C "$RUNNER_TEMP/ci-environment-source" || return 1
+  python -m venv "$RUNNER_TEMP/ci-venv" || return 1
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) . "$RUNNER_TEMP/ci-venv/Scripts/activate" || return 1 ;;
+    *) . "$RUNNER_TEMP/ci-venv/bin/activate" || return 1 ;;
+  esac
+  (cd "$RUNNER_TEMP/ci-environment-source/backend" && python -m pip install -e ".[dev]") || return 1
+}
+ci_environment_setup
+```
+
 ```bash
 export PIP_DISABLE_PIP_VERSION_CHECK=1
 export PYTHONDONTWRITEBYTECODE=1
