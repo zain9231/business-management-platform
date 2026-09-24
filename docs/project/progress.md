@@ -34,7 +34,7 @@ Next task: P2-01, after the phase-1-complete checkpoint
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| Production configuration decision (#51) | 2026-09-24 | `docs/51-production-config-decision` | Authorized Decision Log amendment for Phase 1 security sweep finding 2; the implementation follows in a separate PR; the Phase 1 tag stays blocked until the sweep remediation passes |
+| Production configuration decision (#51) | 2026-09-24 | `docs/51-production-config-decision` (PR #52) | Authorized Decision Log amendment for Phase 1 security sweep finding 2; the implementation follows in a separate PR; the Phase 1 tag stays blocked until the sweep remediation passes |
 
 ## Deferred or reopened
 
