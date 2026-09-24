@@ -34,6 +34,7 @@ Next task: P2-01, after the phase-1-complete checkpoint
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
+| Production configuration decision (#51) | 2026-09-24 | `docs/51-production-config-decision` | Authorized Decision Log amendment for Phase 1 security sweep finding 2; the implementation follows in a separate PR; the Phase 1 tag stays blocked until the sweep remediation passes |
 
 ## Deferred or reopened
 
@@ -97,3 +98,9 @@ relationship rather than making the historical tag describe new bytes.
 - Only `docs/project/master-specification-v1.2.docx` changes among the ten artifacts;
   only its manifest entry changes. The other nine artifact digests remain unchanged.
 - This governance change does not complete P1-06 or its deferred P2-06 factory work.
+
+### Production configuration decision (#51)
+
+- Previous amended manifest SHA-256: `ec7915103d3559db4f65ff8d824e7b039a7fc7499c360e93f9d993518d1d15ef`.
+- New amended manifest SHA-256: `3dd4eb28d674838787d73e41f3374859b7e0ff82d512e78f918267451af8293b`.
+- Only `docs/project/master-specification-v1.2.docx` changes among the ten artifacts; `phase-0-complete` does not move.
