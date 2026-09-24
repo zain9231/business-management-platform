@@ -15,6 +15,14 @@ from tests.conftest import (
     validate_lifecycle_target,
 )
 
+MAINTENANCE_PASSWORD_CANARY_PARTS = ("r1", "harness", "canary", "value")
+MAINTENANCE_PASSWORD_CANARY = "-".join(MAINTENANCE_PASSWORD_CANARY_PARTS)
+
+
+def _unreachable_maintenance_config() -> TestDatabaseConfig:
+    url = f"postgresql+psycopg://owner:{MAINTENANCE_PASSWORD_CANARY}@127.0.0.1:1/r1_test"
+    return TestDatabaseConfig(template_url=make_url(url))
+
 
 class FakeMaintenanceCursor:
     def __init__(self, oid_results: list[tuple[int] | None]) -> None:
@@ -217,3 +225,19 @@ def test_ambiguous_create_outcome_is_not_guessed_or_dropped(
     assert "CREATE DATABASE" in statements
     assert "DROP DATABASE" not in statements
     assert connection.closed
+
+
+@pytest.mark.unit
+def test_maintenance_connection_failure_redacts_database_password() -> None:
+    config = _unreachable_maintenance_config()
+
+    with pytest.raises(DatabaseCreationError) as raised, create_test_database(config):
+        pytest.fail("port 1 must not reach the workload")
+
+    assert str(raised.value) == "could not connect to the maintenance database"
+    assert MAINTENANCE_PASSWORD_CANARY not in str(raised.getrepr())
+    assert MAINTENANCE_PASSWORD_CANARY not in str(
+        raised.getrepr(style="long", showlocals=True, funcargs=True, chain=True)
+    )
+    assert raised.value.__cause__ is None
+    assert raised.value.__context__ is None

@@ -245,11 +245,16 @@ def create_test_database(config: TestDatabaseConfig) -> Iterator[TestDatabaseHar
     application_names = _application_database_names(config)
     validate_lifecycle_target(name, application_database_names=application_names)
 
-    maintenance_connection = psycopg.connect(
-        _connection_string(config.maintenance_url),
-        autocommit=True,
-        application_name="p106-test-database-owner",
-    )
+    try:
+        maintenance_connection = psycopg.connect(
+            _connection_string(config.maintenance_url),
+            autocommit=True,
+            application_name="p106-test-database-owner",
+        )
+    except psycopg.Error:
+        maintenance_connection = None
+    if maintenance_connection is None:
+        raise DatabaseCreationError("could not connect to the maintenance database") from None
     lock_key: int | None = None
     harness: TestDatabaseHarness | None = None
     events: list[str] = []

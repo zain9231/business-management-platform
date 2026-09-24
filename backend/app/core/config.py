@@ -1,8 +1,16 @@
 import json
-from typing import TypedDict
+from ipaddress import IPv6Address, ip_address
+from typing import Self, TypedDict
 from urllib.parse import urlsplit
 
-from pydantic import AnyUrl, SecretStr, TypeAdapter, ValidationError, field_validator
+from pydantic import (
+    AnyUrl,
+    SecretStr,
+    TypeAdapter,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
@@ -55,7 +63,7 @@ class Settings(BaseSettings):
     # SecretStr alone does not redact the raw input attached to validation errors.
     model_config = SettingsConfigDict(hide_input_in_errors=True)
 
-    database_url: str
+    database_url: SecretStr
     jwt_secret: SecretStr
     jwt_issuer: str
     jwt_audience: str
@@ -67,9 +75,9 @@ class Settings(BaseSettings):
 
     @field_validator("database_url")
     @classmethod
-    def _validate_database_url(cls, value: str) -> str:
+    def _validate_database_url(cls, value: SecretStr) -> SecretStr:
         try:
-            url = make_url(value)
+            url = make_url(value.get_secret_value())
         except (ArgumentError, ValueError) as exc:
             raise ValueError("DATABASE_URL must be a valid SQLAlchemy URL") from exc
         if url.drivername != "postgresql+psycopg":
@@ -85,7 +93,11 @@ class Settings(BaseSettings):
             marker in lowered for marker in PLACEHOLDER_MARKERS
         ):
             raise ValueError("JWT_SECRET must not contain a placeholder marker")
-        if len(stripped.encode("utf-8")) < 32:
+        try:
+            secret_length = len(stripped.encode("utf-8"))
+        except UnicodeEncodeError:
+            raise ValueError("JWT_SECRET must be valid UTF-8") from None
+        if secret_length < 32:
             raise ValueError("JWT_SECRET must be at least 32 UTF-8 bytes")
         return SecretStr(stripped)
 
@@ -177,6 +189,59 @@ class Settings(BaseSettings):
         if value <= 0:
             raise ValueError("must be a positive integer")
         return value
+
+    @model_validator(mode="after")
+    def _validate_production_safety(self) -> Self:
+        if self.environment != "production":
+            return self
+
+        url = make_url(self.database_url.get_secret_value())
+        password = url.password
+        if not password:
+            raise ValueError("DATABASE_URL must include a password in production")
+
+        lowered_password = password.lower()
+        username = url.username
+        if lowered_password in {"postgres", "password"} or (
+            username is not None and lowered_password == username.lower()
+        ):
+            raise ValueError(
+                "DATABASE_URL password must not be a default value or the username in production"
+            )
+        if any(marker.lower() in lowered_password for marker in PLACEHOLDER_MARKERS):
+            raise ValueError(
+                "DATABASE_URL password must not contain a placeholder marker in production"
+            )
+        if len(password) < 16:
+            raise ValueError("DATABASE_URL password must be at least 16 characters in production")
+        if any(key.lower() == "password" for key in url.query):
+            raise ValueError("DATABASE_URL must not carry a password query parameter in production")
+        if self.log_level == "DEBUG":
+            raise ValueError("LOG_LEVEL must not be DEBUG in production")
+
+        if any(urlsplit(origin).scheme == "http" for origin in self.cors_allowed_origins):
+            raise ValueError("CORS_ALLOWED_ORIGINS must use https in production")
+        for origin in self.cors_allowed_origins:
+            host = (urlsplit(origin).hostname or "").removesuffix(".")
+            if host == "localhost" or host.endswith(".localhost"):
+                raise ValueError(
+                    "CORS_ALLOWED_ORIGINS must not use a loopback or unspecified host in production"
+                )
+            try:
+                address = ip_address(host)
+            except ValueError:
+                continue
+            if isinstance(address, IPv6Address) and address.ipv4_mapped is not None:
+                restricted_host = (
+                    address.ipv4_mapped.is_loopback or address.ipv4_mapped.is_unspecified
+                )
+            else:
+                restricted_host = address.is_loopback or address.is_unspecified
+            if restricted_host:
+                raise ValueError(
+                    "CORS_ALLOWED_ORIGINS must not use a loopback or unspecified host in production"
+                )
+        return self
 
 
 def load_settings() -> Settings:
