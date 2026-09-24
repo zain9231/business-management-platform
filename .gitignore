@@ -34,6 +34,7 @@ frontend/test-results/
 *.tsbuildinfo
 
 # Local databases and runtime files
+/local-development-backup.sql
 *.sqlite
 *.sqlite3
 *.db

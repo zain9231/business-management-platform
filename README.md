@@ -71,10 +71,25 @@ Implementation proceeds in strict backlog order. Current task status is tracked 
 - [Authoritative DBML ERD](docs/architecture/erd/source/business-management-platform-erd-v1.2.dbml)
 - [ERD PDF](docs/architecture/erd/exports/business-management-platform-erd-v1.2.pdf)
 
+The [DBML source](docs/architecture/erd/source/business-management-platform-erd-v1.2.dbml) is the
+authoritative data model, and the finalized documents under [API contracts](docs/api/contracts/) are
+the authoritative endpoint and behavior contracts.
+
 ## Local development
 
+Developer prerequisites are Git, Python 3.13, Docker Desktop or Docker Engine using Linux
+containers, and Docker Compose. Git Bash is also required on Windows for the CI-equivalent Bash
+sequence below.
+
 Docker Compose runs the backend and PostgreSQL. Copy `.env.example` to `.env`, replace the deliberately
-invalid `JWT_SECRET` sentinel, then run `docker compose up --build --wait` from the repository root.
+invalid `JWT_SECRET` sentinel, then run the following from the repository root on Linux, macOS, or
+Git Bash. The defaults remain 5432 and 8000; proof runs override them with run-owned ports.
+
+```bash
+POSTGRES_PORT="${POSTGRES_PORT:-5432}" BACKEND_PORT="${BACKEND_PORT:-8000}" \
+  docker compose up --build --wait
+```
+
 See [local development with Docker Compose](docs/deployment/local-development.md) for prerequisites,
 health checks, logs, database access, persistence verification, and safe reset instructions.
 
@@ -95,32 +110,101 @@ From the repository root:
 python scripts/quality.py format
 python scripts/quality.py lint
 python scripts/quality.py typecheck
-python -m pytest -c backend/pyproject.toml backend/tests
+TEST_DATABASE_URL="${TEST_DATABASE_URL:?set an explicit URL for the owned test database}" \
+  python -m pytest -c backend/pyproject.toml backend/tests
 python -m pytest tests/hooks
 ```
 
 `format` applies Ruff fixes; `lint` checks formatting and lint without changing files. Type checking
 uses strict mypy. The backend command is the full gate and requires PostgreSQL; its documented fast
 loop also includes integration and deployment tests. `python -m pytest -c backend/pyproject.toml
-backend/tests -m unit` is the database-free loop. Repository-tooling tests remain separate. Frontend
-executable checks begin in P6-01.
+backend/tests -m unit` is the database-free loop when run with
+`TEST_DATABASE_URL=not-a-database-url`. Repository-tooling tests remain separate. Frontend executable
+checks begin in P6-01.
 
 ### CI-equivalent checks
 
-After completing the [backend setup](backend/README.md#setup), run the public CI commands from the
-repository root in this order. Set `RUNNER_TEMP` to a writable temporary directory for local runs.
+This sequence is Bash for Linux, macOS, or Git Bash and runs from the repository root of a pristine
+checkout. Unlike the ordinary [backend setup](backend/README.md#setup), it uses a Python environment
+outside the checkout. On Windows, build that environment from a Git-archived copy of
+`backend/pyproject.toml`; do not install the Linux-only development lock with Windows Python. Set
+`PYTHONPATH` to the pristine checkout's `backend` directory and verify imports resolve there.
+
+Keep all writable state outside the checkout: the Python environment and build metadata, pip cache,
+`RUNNER_TEMP` (including the lock reproduction tree, Gitleaks files, command captures, and all pytest
+basetemps), `PRE_COMMIT_HOME`, and the run-owned PostgreSQL service and data. The PostgreSQL service
+must be verified as belonging to this run before setting `POSTGRES_PORT` and `TEST_DATABASE_URL`.
+The commands below orchestrate on the host except for the two `pip-compile` lines. That
+container-executed lock step uses pinned `pip-tools==7.6.1` in the Linux/AMD64 image read from
+`backend/Dockerfile`. The two `cmp` commands then run back on the host.
+
+Run this setup block first, in the same shell as the sequence below, with RUNNER_TEMP naming an existing directory outside the checkout.
 
 ```bash
+ci_environment_setup() {
+  export PIP_DISABLE_PIP_VERSION_CHECK=1
+  export PYTHONDONTWRITEBYTECODE=1
+  : "${RUNNER_TEMP:?set RUNNER_TEMP outside the checkout}"
+  : "${PIP_CACHE_DIR:?set PIP_CACHE_DIR outside the checkout}"
+  checkout_root="$(pwd -P)"
+  runner_temp_root="$(cd "$RUNNER_TEMP" && pwd -P)" || {
+    printf '%s\n' 'RUNNER_TEMP must name an existing directory outside the checkout' >&2
+    return 1
+  }
+  case "$runner_temp_root" in
+    "$checkout_root"|"$checkout_root"/*)
+      printf '%s\n' 'RUNNER_TEMP must be outside the checkout' >&2
+      return 1 ;;
+  esac
+  python -c 'import sys; assert sys.version_info[:2] == (3, 13), "Python 3.13 is required"' || return 1
+  mkdir -p "$RUNNER_TEMP/ci-environment-source" || return 1
+  git archive HEAD backend | tar -x -C "$RUNNER_TEMP/ci-environment-source" || return 1
+  python -m venv "$RUNNER_TEMP/ci-venv" || return 1
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) . "$RUNNER_TEMP/ci-venv/Scripts/activate" || return 1 ;;
+    *) . "$RUNNER_TEMP/ci-venv/bin/activate" || return 1 ;;
+  esac
+  (cd "$RUNNER_TEMP/ci-environment-source/backend" && python -m pip install -e ".[dev]") || return 1
+}
+ci_environment_setup
+```
+
+```bash
+export PIP_DISABLE_PIP_VERSION_CHECK=1
+export PYTHONDONTWRITEBYTECODE=1
+: "${RUNNER_TEMP:?set RUNNER_TEMP outside the checkout}"
+: "${PIP_CACHE_DIR:?set PIP_CACHE_DIR outside the checkout}"
+: "${PRE_COMMIT_HOME:?set PRE_COMMIT_HOME outside the checkout}"
+export PYTHONPATH="$PWD/backend"
+POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export POSTGRES_PORT
+TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgresql+psycopg://postgres:postgres@127.0.0.1:${POSTGRES_PORT}/bmp_test}"
+export TEST_DATABASE_URL
+
+python -c 'import pathlib, app; expected=(pathlib.Path.cwd()/"backend"/"app").resolve(); actual=pathlib.Path(app.__file__).resolve(); print(actual); assert actual.is_relative_to(expected)'
 python -m pip check
 lock_repro_root="$RUNNER_TEMP/lock-repro"
 mkdir -p "$lock_repro_root"
 git archive HEAD backend | tar -x -C "$lock_repro_root"
-(
-  cd "$lock_repro_root/backend"
-  pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
-  pip-compile --allow-unsafe --extra dev --generate-hashes \
-    --output-file=requirements-dev.txt pyproject.toml
-)
+expected_python_image="python:3.13.15-slim-bookworm@sha256:0f16c5d35fe6464ee471792ab3bb9116f911b65b3fbf10120c98d2bdc6332f48"
+python_image="$(sed -n 's/^ARG PYTHON_IMAGE=//p' backend/Dockerfile)"
+test "$python_image" = "$expected_python_image"
+lock_backend="$lock_repro_root/backend"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) lock_backend_mount="$(cygpath -w "$lock_backend")" ;;
+  *) lock_backend_mount="$lock_backend" ;;
+esac
+MSYS_NO_PATHCONV=1 docker run --rm --platform linux/amd64 \
+  --mount "type=bind,source=$lock_backend_mount,target=/work" \
+  --workdir /work \
+  --env PIP_DISABLE_PIP_VERSION_CHECK=1 \
+  "$python_image" sh -euc '
+    python -m pip install --require-hashes --requirement requirements-dev.txt
+    test "$(python -c '\''from importlib.metadata import version; print(version("pip-tools"))'\'')" = "7.6.1"
+    pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
+    pip-compile --allow-unsafe --extra dev --generate-hashes \
+      --output-file=requirements-dev.txt pyproject.toml
+  '
 cmp --silent backend/requirements.txt "$lock_repro_root/backend/requirements.txt"
 cmp --silent backend/requirements-dev.txt "$lock_repro_root/backend/requirements-dev.txt"
 python -m pip check
@@ -129,7 +213,7 @@ python scripts/quality.py typecheck
 python scripts/validate_migrations.py
 TEST_DATABASE_URL=not-a-database-url python -m pytest -c backend/pyproject.toml \
   backend/tests -m unit -p no:cacheprovider --basetemp="$RUNNER_TEMP/pytest-unit"
-TEST_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/bmp_test \
+TEST_DATABASE_URL="$TEST_DATABASE_URL" \
   python -m pytest -c backend/pyproject.toml backend/tests -p no:cacheprovider \
   --basetemp="$RUNNER_TEMP/pytest-full"
 python -m pytest tests/hooks -p no:cacheprovider --basetemp="$RUNNER_TEMP/pytest-tooling"
@@ -156,6 +240,14 @@ The configuration file alone does not activate commit checks. Hooks can modify u
 review their changes before staging. Gitleaks scans the staged changes at commit time. The separate
 manual `gitleaks-dir` hook scans the working directory; `--all-files` does not turn the staged scanner
 into a working-directory or history scan.
+
+## Troubleshooting
+
+If Compose does not become healthy, confirm the run-owned `BACKEND_PORT` and `POSTGRES_PORT`, then
+check `docker compose ps`. Request `/health/live` on the selected backend port and inspect
+`docker compose logs backend` and `docker compose logs db` before rebuilding or resetting anything.
+Alembic migration configuration begins in P2-01, so missing migration commands before that task are
+expected rather than a database-health remedy.
 
 ## Phase 0 artifact verification
 
