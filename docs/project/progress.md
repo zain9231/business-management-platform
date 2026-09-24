@@ -33,7 +33,7 @@ Next task: P2-01, after the phase-1-complete checkpoint
 
 | Task | Started | Branch | Blocking issue |
 |---|---|---|---|
-| Production configuration safety (#53) | 2026-09-24 | `fix/53-production-config-safety` | Implements the #51 decision and closes Phase 1 security sweep findings 2, 8, 9 and 10; the Phase 1 tag stays blocked until remediation R2 and R3 and a fresh security sweep pass |
+| Production configuration safety (#53) | 2026-09-24 | `fix/53-production-config-safety` (PR #54) | Implements the #51 decision and closes Phase 1 security sweep findings 2, 8, 9 and 10; the Phase 1 tag stays blocked until remediation R2 and R3 and a fresh security sweep pass |
 | Phase 1 exit gate | 2026-09-23 | checkpoint tag name `phase-1-complete` | The Phase 1 security sweep blocked the tag; remediation (#53, R2, R3) and a fresh security sweep must pass first |
 
 ## Deferred or reopened
