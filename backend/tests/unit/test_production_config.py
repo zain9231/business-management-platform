@@ -161,6 +161,20 @@ CASES = [
         HTTP_ORIGIN,
         "http://api.example.com",
     ),
+    ProductionCase(
+        "password-query-key-after-quoted-value",
+        "DATABASE_URL",
+        f"{SAFE_DATABASE_URL}?application_name%3D%27x%27password=postgres",
+        QUERY_PASSWORD,
+        "application_name%3D%27x%27password=postgres",
+    ),
+    ProductionCase(
+        "password-query-key-with-embedded-equals",
+        "DATABASE_URL",
+        f"{SAFE_DATABASE_URL}?password%3Dpostgres%20sslmode=prefer",
+        QUERY_PASSWORD,
+        "password%3Dpostgres%20sslmode=prefer",
+    ),
 ]
 
 for name, host in (

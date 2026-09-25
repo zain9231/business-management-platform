@@ -215,7 +215,7 @@ class Settings(BaseSettings):
             )
         if len(password) < 16:
             raise ValueError("DATABASE_URL password must be at least 16 characters in production")
-        if any("password" in re.split(r"[\s=]+", key.lower()) for key in url.query):
+        if any("password" in re.split(r"[\s=']+", key.lower()) for key in url.query):
             raise ValueError("DATABASE_URL must not carry a password query parameter in production")
         if self.log_level == "DEBUG":
             raise ValueError("LOG_LEVEL must not be DEBUG in production")
