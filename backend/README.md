@@ -49,8 +49,8 @@ messages free of input values, and never log settings objects.
 
 | Variable | Required / default | Accepted values |
 |---|---|---|
-| `DATABASE_URL` | required | `postgresql+psycopg://` connection URL |
-| `JWT_SECRET` | required | at least 32 UTF-8 bytes; rejects the ten placeholder markers and the `.env.example` sentinel, case-insensitively |
+| `DATABASE_URL` | required | `postgresql+psycopg://` connection URL; held as `SecretStr` so settings representations and dumps redact it |
+| `JWT_SECRET` | required | valid UTF-8, at least 32 UTF-8 bytes; rejects the ten placeholder markers and the `.env.example` sentinel, case-insensitively |
 | `JWT_ISSUER` | required | non-empty string, surrounding whitespace trimmed |
 | `JWT_AUDIENCE` | required | non-empty string, surrounding whitespace trimmed |
 | `CORS_ALLOWED_ORIGINS` | required | JSON array of unique, explicit `http`/`https` origins — no wildcard host, userinfo, path, query, fragment, backslash, or malformed port |
@@ -58,6 +58,17 @@ messages free of input values, and never log settings objects.
 | `LOG_LEVEL` | default `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` (case-insensitive) |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | default `15` | positive integer |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | default `14` | positive integer |
+
+In production only, `DATABASE_URL` must have a nonempty password of at least 16 Unicode
+characters after SQLAlchemy decodes it once. The password must not equal `postgres`, `password`,
+or the username (case-insensitively), or contain a placeholder marker. A query parameter whose
+decoded key names `password` is rejected case-insensitively, including a key with surrounding
+whitespace, `=` or a single quote. `LOG_LEVEL=DEBUG` is rejected. Every CORS origin must use
+`https` and must not use `localhost`, a `.localhost` subdomain, or a loopback or unspecified IP
+host, including IPv4-mapped IPv6 addresses and a trailing-dot `localhost`. Development and
+test keep their existing behavior. Code that needs the connection URL reads
+`database_url.get_secret_value()` only at the connection boundary; diagnostics must never include
+the value.
 
 If the required variables are already exported in the shell (CI, a container, a configured
 launcher), start the backend directly. Keep 8000 as the ordinary default while allowing the caller

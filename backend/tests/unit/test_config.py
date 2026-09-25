@@ -35,6 +35,15 @@ ENV_EXAMPLE_SENTINEL = "replace-me-with-at-least-32-random-bytes"
 
 VALID_SECRET_PARTS = ("correct", "horse", "battery", "staple", "0123456789")
 VALID_SECRET = "-".join(VALID_SECRET_PARTS)
+PRODUCTION_SAFE_DATABASE_URL = "postgresql+psycopg://app:gK7mQ9vT2rP5xW8nH4sL6dB1@db.example/appdb"
+PRODUCTION_SAFE_ORIGINS = '["https://app.example.com"]'
+
+
+def _set_production_safe_values(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("DATABASE_URL", PRODUCTION_SAFE_DATABASE_URL)
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", PRODUCTION_SAFE_ORIGINS)
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
 
 
 @pytest.mark.parametrize("missing_var", REQUIRED_NO_DEFAULT_VARS)
@@ -370,6 +379,8 @@ def test_environment_accepts_approved_values(
     monkeypatch: pytest.MonkeyPatch, environment: str
 ) -> None:
     monkeypatch.setenv("ENVIRONMENT", environment)
+    if environment == "production":
+        _set_production_safe_values(monkeypatch)
 
     settings = Settings()
 
@@ -487,13 +498,13 @@ def test_database_url_rejects_non_postgresql_psycopg_scheme(
 def test_database_url_accepts_postgresql_psycopg_scheme() -> None:
     settings = Settings()
 
-    assert settings.database_url.startswith("postgresql+psycopg://")
+    assert settings.database_url.get_secret_value().startswith("postgresql+psycopg://")
 
 
 def test_production_configuration_rejects_placeholder_jwt_secret(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ENVIRONMENT", "production")
+    _set_production_safe_values(monkeypatch)
     monkeypatch.setenv("JWT_SECRET", ENV_EXAMPLE_SENTINEL)
 
     with pytest.raises(ValidationError):
@@ -501,7 +512,7 @@ def test_production_configuration_rejects_placeholder_jwt_secret(
 
 
 def test_production_configuration_rejects_wildcard_cors(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ENVIRONMENT", "production")
+    _set_production_safe_values(monkeypatch)
     monkeypatch.setenv("CORS_ALLOWED_ORIGINS", '["*"]')
 
     with pytest.raises(ValidationError):
@@ -511,7 +522,7 @@ def test_production_configuration_rejects_wildcard_cors(monkeypatch: pytest.Monk
 def test_production_configuration_accepts_fully_valid_settings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("ENVIRONMENT", "production")
+    _set_production_safe_values(monkeypatch)
 
     settings = Settings()
 

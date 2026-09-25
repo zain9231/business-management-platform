@@ -14,7 +14,7 @@ from psycopg import sql
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, Engine, make_url
-from sqlalchemy.exc import ArgumentError
+from sqlalchemy.exc import ArgumentError, DBAPIError
 from sqlalchemy.orm import Session
 
 from app.core import clock
@@ -245,11 +245,16 @@ def create_test_database(config: TestDatabaseConfig) -> Iterator[TestDatabaseHar
     application_names = _application_database_names(config)
     validate_lifecycle_target(name, application_database_names=application_names)
 
-    maintenance_connection = psycopg.connect(
-        _connection_string(config.maintenance_url),
-        autocommit=True,
-        application_name="p106-test-database-owner",
-    )
+    try:
+        maintenance_connection = psycopg.connect(
+            _connection_string(config.maintenance_url),
+            autocommit=True,
+            application_name="p106-test-database-owner",
+        )
+    except psycopg.Error:
+        maintenance_connection = None
+    if maintenance_connection is None:
+        raise DatabaseCreationError("could not connect to the maintenance database") from None
     lock_key: int | None = None
     harness: TestDatabaseHarness | None = None
     events: list[str] = []
@@ -291,7 +296,13 @@ def create_test_database(config: TestDatabaseConfig) -> Iterator[TestDatabaseHar
             application_database_names=application_names,
             events=events,
         )
-        with engine.begin() as connection:
+        try:
+            workload_connection = engine.connect()
+        except DBAPIError:
+            workload_connection = None
+        if workload_connection is None:
+            raise DatabaseCreationError("could not connect to the new test database") from None
+        with workload_connection as connection, connection.begin():
             current_database = connection.scalar(text("SELECT current_database()"))
             if current_database != name:
                 raise DatabaseCreationError("workload connection reached an unexpected database")

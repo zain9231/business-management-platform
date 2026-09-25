@@ -29,7 +29,7 @@ def test_client_fixture_enters_the_managed_lifespan_context(client: TestClient) 
 
 def test_settings_fixture_uses_explicit_isolated_values(test_settings: Settings) -> None:
     assert test_settings.environment == "test"
-    assert test_settings.database_url == VALID_ENVIRONMENT["DATABASE_URL"]
+    assert test_settings.database_url.get_secret_value() == VALID_ENVIRONMENT["DATABASE_URL"]
 
 
 def test_settings_environment_patch_restores_within_the_test(
@@ -39,6 +39,12 @@ def test_settings_environment_patch_restores_within_the_test(
 
     with monkeypatch.context() as isolated_patch:
         isolated_patch.setenv("ENVIRONMENT", "production")
+        isolated_patch.setenv(
+            "DATABASE_URL",
+            "postgresql+psycopg://app:gK7mQ9vT2rP5xW8nH4sL6dB1@db.example/appdb",
+        )
+        isolated_patch.setenv("CORS_ALLOWED_ORIGINS", '["https://app.example.com"]')
+        isolated_patch.setenv("LOG_LEVEL", "INFO")
         assert Settings().environment == "production"
 
     assert Settings().environment == "test"
