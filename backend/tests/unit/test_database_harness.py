@@ -1,7 +1,9 @@
 import re
 import traceback
+from collections.abc import Callable
 from typing import Self
 
+import psycopg
 import pytest
 from sqlalchemy.engine import make_url
 
@@ -17,10 +19,17 @@ from tests.conftest import (
 
 MAINTENANCE_PASSWORD_CANARY_PARTS = ("r1", "harness", "canary", "value")
 MAINTENANCE_PASSWORD_CANARY = "-".join(MAINTENANCE_PASSWORD_CANARY_PARTS)
+WORKLOAD_PASSWORD_CANARY_PARTS = ("r1", "workload", "canary", "value")
+WORKLOAD_PASSWORD_CANARY = "-".join(WORKLOAD_PASSWORD_CANARY_PARTS)
 
 
 def _unreachable_maintenance_config() -> TestDatabaseConfig:
     url = f"postgresql+psycopg://owner:{MAINTENANCE_PASSWORD_CANARY}@127.0.0.1:1/r1_test"
+    return TestDatabaseConfig(template_url=make_url(url))
+
+
+def _unreachable_workload_config() -> TestDatabaseConfig:
+    url = f"postgresql+psycopg://owner:{WORKLOAD_PASSWORD_CANARY}@127.0.0.1:1/r1_test"
     return TestDatabaseConfig(template_url=make_url(url))
 
 
@@ -58,6 +67,36 @@ class FakeMaintenanceConnection:
 
     def close(self) -> None:
         self.closed = True
+
+
+class FakeCleanupCursor(FakeMaintenanceCursor):
+    def __init__(
+        self,
+        oid_results: list[tuple[int] | None],
+        catalog_rows: list[tuple[str, int]],
+    ) -> None:
+        super().__init__(oid_results)
+        self.catalog_rows = catalog_rows
+
+    def fetchone(self) -> tuple[int] | None:
+        if "pg_locks" in self.current or "pg_advisory_unlock" in self.current:
+            return (True,)
+        return super().fetchone()
+
+    def fetchall(self) -> list[tuple[str, int]]:
+        if "SELECT datname, oid FROM pg_database" in self.current:
+            return self.catalog_rows
+        return []
+
+
+class FakeCleanupConnection(FakeMaintenanceConnection):
+    def __init__(
+        self,
+        oid_results: list[tuple[int] | None],
+        catalog_rows: list[tuple[str, int]],
+    ) -> None:
+        super().__init__(oid_results)
+        self.test_cursor = FakeCleanupCursor(oid_results, catalog_rows)
 
 
 def test_database_config_uses_the_documented_compose_default(
@@ -241,3 +280,37 @@ def test_maintenance_connection_failure_redacts_database_password() -> None:
     )
     assert raised.value.__cause__ is None
     assert raised.value.__context__ is None
+
+
+@pytest.mark.unit
+def test_workload_connection_failure_redacts_database_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    name = "bmp_test_00112233445566778899aabbccddeeff"
+    connection = FakeCleanupConnection([None, (4242,), None], [(name, 4242)])
+    real_connect: Callable[..., object] = psycopg.connect
+    calls: list[str] = []
+
+    def connect(*args: object, **kwargs: object) -> object:
+        calls.append("connect")
+        if len(calls) == 1:
+            return connection
+        return real_connect(*args, **kwargs)
+
+    config = _unreachable_workload_config()
+    monkeypatch.setattr("tests.conftest.generate_database_name", lambda: name)
+    monkeypatch.setattr("psycopg.connect", connect)
+
+    with pytest.raises(DatabaseCreationError) as raised, create_test_database(config):
+        pytest.fail("port 1 must not reach the workload")
+
+    assert str(raised.value) == "could not connect to the new test database"
+    assert WORKLOAD_PASSWORD_CANARY not in str(raised.getrepr())
+    assert WORKLOAD_PASSWORD_CANARY not in str(
+        raised.getrepr(style="long", showlocals=True, funcargs=True, chain=True)
+    )
+    assert raised.value.__cause__ is None
+    assert raised.value.__context__ is None
+    assert calls == ["connect", "connect"]
+    assert "DROP DATABASE" in "\n".join(connection.test_cursor.statements)
+    assert connection.closed

@@ -183,10 +183,15 @@ def test_active_connection_refuses_drop_without_terminating_the_client(
     database_harness_factory: DatabaseHarnessFactory,
 ) -> None:
     with database_harness_factory() as temporary:
-        client = psycopg.connect(
-            temporary.connection_string,
-            application_name="p106-active-refusal-proof",
-        )
+        try:
+            client = psycopg.connect(
+                temporary.connection_string,
+                application_name="p106-active-refusal-proof",
+            )
+        except psycopg.Error:
+            client = None
+        if client is None:
+            raise AssertionError("could not connect the active client") from None
         try:
             with pytest.raises(DatabaseCleanupError, match="active connection"):
                 temporary.assert_safe_to_drop()

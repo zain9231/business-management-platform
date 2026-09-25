@@ -61,12 +61,13 @@ messages free of input values, and never log settings objects.
 
 In production only, `DATABASE_URL` must have a nonempty password of at least 16 Unicode
 characters after SQLAlchemy decodes it once. The password must not equal `postgres`, `password`,
-or the username (case-insensitively), contain a placeholder marker, or appear in a query parameter
-whose decoded key is `password`. `LOG_LEVEL=DEBUG` is rejected. Every CORS origin must use `https`
-and must not use `localhost`, a `.localhost` subdomain, or a loopback or unspecified IP host,
-including IPv4-mapped IPv6 addresses and a trailing-dot `localhost`. Development and test keep
-their existing behavior. Code that needs the connection URL reads `database_url.get_secret_value()`
-only at the connection boundary; diagnostics must never include the value.
+or the username (case-insensitively), or contain a placeholder marker. A query parameter whose
+decoded key names `password` is rejected case-insensitively, including a key with surrounding
+whitespace or `=`. `LOG_LEVEL=DEBUG` is rejected. Every CORS origin must use `https` and must not
+use `localhost`, a `.localhost` subdomain, or a loopback or unspecified IP host, including
+IPv4-mapped IPv6 addresses and a trailing-dot `localhost`. Development and test keep their
+existing behavior. Code that needs the connection URL reads `database_url.get_secret_value()` only
+at the connection boundary; diagnostics must never include the value.
 
 If the required variables are already exported in the shell (CI, a container, a configured
 launcher), start the backend directly. Keep 8000 as the ordinary default while allowing the caller

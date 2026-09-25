@@ -119,6 +119,48 @@ CASES = [
         HTTP_ORIGIN,
         "http://app.example.com",
     ),
+    ProductionCase(
+        "password-query-key-trailing-space",
+        "DATABASE_URL",
+        f"{SAFE_DATABASE_URL}?password%20=postgres",
+        QUERY_PASSWORD,
+        "password%20=postgres",
+    ),
+    ProductionCase(
+        "password-query-key-leading-space",
+        "DATABASE_URL",
+        f"{SAFE_DATABASE_URL}?%20password=postgres",
+        QUERY_PASSWORD,
+        "%20password=postgres",
+    ),
+    ProductionCase(
+        "password-query-key-after-embedded-pair",
+        "DATABASE_URL",
+        f"{SAFE_DATABASE_URL}?sslmode%3Dprefer%20password=postgres",
+        QUERY_PASSWORD,
+        "sslmode%3Dprefer%20password=postgres",
+    ),
+    ProductionCase(
+        "uppercase-password-query-key",
+        "DATABASE_URL",
+        f"{SAFE_DATABASE_URL}?PASSWORD=x",
+        QUERY_PASSWORD,
+        "PASSWORD=x",
+    ),
+    ProductionCase(
+        "mixed-origins-loopback",
+        "CORS_ALLOWED_ORIGINS",
+        '["https://app.example.com", "https://localhost"]',
+        LOCAL_ORIGIN,
+        "https://localhost",
+    ),
+    ProductionCase(
+        "mixed-origins-http",
+        "CORS_ALLOWED_ORIGINS",
+        '["https://app.example.com", "http://api.example.com"]',
+        HTTP_ORIGIN,
+        "http://api.example.com",
+    ),
 ]
 
 for name, host in (
